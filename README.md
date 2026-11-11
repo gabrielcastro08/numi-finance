@@ -27,10 +27,13 @@ por agente de IA → validação.
 
 ## Funcionalidades
 
-- **Dashboard** com saldo, taxa de poupança, gastos por categoria (donut) e evolução mensal (linha)
-- **Receitas, despesas e recorrentes**: criar, editar e excluir, com categorias e meio de pagamento
+- **Início** com resumo do mês, destaques automáticos (variação por categoria, ritmo da meta, limites) e atalhos
+- **Análise com filtros**: período, tipo, categorias, meio de pagamento e comparação com o período anterior
+- **Seletor de ano e visão geral** de todos os anos: ano a ano, patrimônio acumulado e compromissos futuros
+- **Compras parceladas**, **recorrentes com dia do mês** e **lançar pendentes** em lote
+- **Limite mensal por categoria** com aviso ao chegar perto
 - **Meta de economia** com cálculo automático da meta mensal a partir da data de início do usuário
-- **Detalhe por mês**: receitas × despesas, gastos por categoria e top 5 maiores despesas
+- **Funciona offline**: alterações ficam na fila do aparelho e sobem quando a conexão volta; desfazer exclusões
 - **Onboarding guiado**: perfil com foto, ponto de partida, meta e importação de dados anteriores
 - **Importar/exportar `.xlsx`**: modelo baixável, validação linha a linha e preview de erros antes de gravar
 - **Duas interfaces no mesmo app**: desktop (sidebar) e mobile (bottom nav + bottom sheets)
@@ -59,6 +62,12 @@ flowchart TB
 
 **Decisões que valem destacar**
 
+- **Fila de gravação persistente.** Cada alteração vira uma operação serializável executada em
+  ordem; sem rede, ela fica no `localStorage` e é reaplicada sobre os dados do servidor na próxima
+  abertura. Erros de validação (4xx) são descartados e avisados, em vez de travar a fila.
+- **Migrações aditivas e compatíveis.** Colunas novas são opcionais e o app detecta se o banco já
+  foi migrado, escondendo os recursos que dependem delas, então código e banco podem ser
+  publicados em qualquer ordem.
 - **Do "último que salva ganha" para escrita granular.** A primeira versão guardava todo o
   estado num único JSON e sobrescrevia tudo a cada alteração. Com dois dispositivos abertos,
   lançamentos se perdiam. A versão atual usa tabelas relacionais e `insert`/`update`/`delete`
@@ -118,10 +127,11 @@ topo do script em `index.html`.
 
 ## Roadmap
 
+- [x] Seletor de ano e visão geral multi-ano
+- [x] Parcelas, limites por categoria e recorrentes com dia
 - [ ] Categorização automática de transações com LLM (Supabase Edge Function, saída estruturada e validada)
 - [ ] Perguntas em linguagem natural sobre os próprios gastos
-- [ ] Resumo mensal com insights gerados por IA
-- [ ] Seletor de ano (os dados já são armazenados com `year`)
+- [ ] Resumo mensal escrito por IA (hoje os destaques são gerados por regras)
 
 ## Autor
 

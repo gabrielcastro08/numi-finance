@@ -1,5 +1,17 @@
 # Changelog — Numi
 
+## [1.3.0] — nova identidade, análise com filtros e planejamento
+- Desktop redesenhado: barra lateral verde-escura, superfícies com profundidade, tipografia maior
+- Nova tela de Início (desktop): saudação, resumo do mês, destaques automáticos, recorrentes, meta, limites e saúde financeira
+- Abertura com a logo "se escrevendo"
+- Análise com painel de filtros (período, tipo, categorias, meio de pagamento, comparação com período anterior), igual no desktop e no mobile
+- Seletor de ano e Visão geral com todos os anos (ano a ano, patrimônio acumulado, categorias por ano, compromissos futuros)
+- Compras parceladas (2 a 72x, valor da parcela ou total), com exclusão de uma ou de todas as parcelas
+- Recorrentes com dia do mês (data sugerida) e "Lançar pendentes" em lote
+- Limite mensal opcional por categoria, com aviso ao chegar a 80% e 100%
+- Excluir com "Desfazer" no lugar do "Tem certeza?"
+- Alterações feitas sem internet ficam salvas no aparelho e são enviadas depois, mesmo fechando o app; o app abre offline com os últimos dados
+
 ## [1.2.0] — recorrentes, autocomplete e gráficos
 - Novo ícone do app: logo branca sobre verde, sem cantos transparentes (ícone maskable correto no Android)
 - Recorrentes no mobile: pendentes do mês primeiro, marcação de "lançada este mês" e tela "Ver todas" com busca e filtro
