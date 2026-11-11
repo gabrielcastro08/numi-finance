@@ -16,3 +16,6 @@ node_modules/
 
 # Backup local da versao antiga (fica fora do repositorio)
 backup/
+
+# Copia de teste gerada por dev/build-mock.sh
+dev/.site/

@@ -104,6 +104,14 @@ O Supabase Auth não funciona via `file://`, então sirva por HTTP:
 npx serve -l 3000 controle-financeiro-deploy
 ```
 
+**Modo de teste sem banco:** `dev/build-mock.sh` gera uma cópia do app que usa um Supabase
+falso em memória ([`dev/mock-supabase.js`](dev/mock-supabase.js)) com dados fictícios, já
+logado. Serve para validar mudanças de interface sem conta e sem tocar em dados reais:
+
+```bash
+sh dev/build-mock.sh && python -m http.server 8790 --directory dev/.site
+```
+
 Abra `http://localhost:3000`. Para usar um projeto Supabase próprio, rode
 `supabase/01_schema.sql` no SQL Editor e troque `SUPABASE_URL` / `SUPABASE_ANON_KEY` no
 topo do script em `index.html`.

@@ -12,6 +12,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8765", "--directory", "controle-financeiro-deploy"],
       "port": 8765
+    },
+    {
+      "name": "numi-mock",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8790", "--directory", "dev/.site"],
+      "port": 8790
     }
   ]
 }

@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Numi">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2">
+<link rel="icon" type="image/x-icon" href="icons/favicon.ico?v=2">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -146,7 +146,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-main);min-hei
 .autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:8px;z-index:100;max-height:200px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 20px rgba(42,34,24,.1);}
 .autocomplete-item{padding:8px 12px;font-size:12px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--border);}
 .autocomplete-item:last-child{border-bottom:none;}
-.autocomplete-item:hover{background:var(--bg2);}
+.autocomplete-item:hover,.autocomplete-item.active{background:var(--bg2);}
 .autocomplete-item small{color:var(--text3);font-size:10px;}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;}
 .score-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.5rem;}
@@ -493,6 +493,32 @@ function syncMonthFromDate(dateId,monthId){
   if(!v)return;
   document.getElementById(monthId).value=new Date(v+'T00:00:00').getMonth();
 }
+
+// ====== RECORRENTES: busca e status (compartilhado desktop/mobile) ======
+const normTxt=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const escHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// já existe lançamento com o mesmo nome no mês corrente?
+function recLaunched(r,month){
+  const m=month??new Date().getMonth();
+  const list=r.type==='receita'?state.receitas:state.despesas;
+  const n=normTxt(r.name);
+  return list.some(t=>t.month===m&&normTxt(t.name)===n);
+}
+// recorrentes que casam com o texto (sem acento/caixa); quem começa com o texto vem primeiro
+function recSearch(q,type){
+  const nq=normTxt(q);
+  return state.recorrentes
+    .filter(r=>(!type||r.type===type)&&(!nq||normTxt(r.name).includes(nq)||normTxt(r.tag).includes(nq)))
+    .map(r=>{const n=normTxt(r.name);return{r,rank:!nq?0:n.startsWith(nq)?0:n.split(/\s+/).some(w=>w.startsWith(nq))?1:2};})
+    .sort((a,b)=>a.rank-b.rank||a.r.name.localeCompare(b.r.name,'pt-BR'))
+    .map(x=>x.r);
+}
+// pendentes do mês primeiro, depois já lançadas; dentro de cada grupo, despesas antes e por nome
+function recSorted(list){
+  const m=new Date().getMonth();
+  return list.map(r=>({r,done:recLaunched(r,m)}))
+    .sort((a,b)=>a.done-b.done||(a.r.type===b.r.type?0:a.r.type==='despesa'?-1:1)||a.r.name.localeCompare(b.r.name,'pt-BR'));
+}
 </script>
 <!-- ============================================================ -->
 <!--  AUTH (login / cadastro / esqueci senha)                     -->
@@ -706,7 +732,7 @@ function syncMonthFromDate(dateId,monthId){
 <div class="modal-overlay" id="modal-add">
   <div class="modal">
     <div class="modal-title" id="modal-add-title">Nova Receita</div>
-    <div class="form-row"><label class="form-label">Nome</label><div class="autocomplete-wrap"><input class="form-input" id="tx-name" placeholder="Ex: Salário | Yuca" autocomplete="off" oninput="showAutocomplete(this.value)" onblur="setTimeout(hideAutocomplete,150)"><div class="autocomplete-list" id="autocomplete-list" style="display:none"></div></div></div>
+    <div class="form-row"><label class="form-label">Nome</label><div class="autocomplete-wrap"><input class="form-input" id="tx-name" placeholder="Digite para buscar nas recorrentes" autocomplete="off" oninput="showAutocomplete(this.value)" onfocus="showAutocomplete(this.value)" onkeydown="acKey(event)" onblur="setTimeout(hideAutocomplete,150)"><div class="autocomplete-list" id="autocomplete-list" style="display:none"></div></div></div>
     <div class="form-row"><label class="form-label">Valor (R$)</label><input class="form-input" id="tx-value" type="number" step="0.01" placeholder="0,00"></div>
     <div class="form-row"><label class="form-label">Data (opcional)</label><input class="form-input" id="tx-date" type="date" onchange="syncMonthFromDate('tx-date','tx-month')"></div>
     <div class="form-row"><label class="form-label">Mês</label><select class="form-select" id="tx-month"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select></div>
@@ -921,20 +947,19 @@ function renderDesktopCharts(){
   document.getElementById('dash-subtitle').textContent=`${APP_YEAR} — atualizado agora`;
   document.getElementById('chart-econ-title').textContent=`economia acumulada — ${APP_YEAR}`;
   const tots=MONTHS.map((_,i)=>getMT(i));
-  let acc=0;const accData=tots.map(t=>{acc+=t.saldo;return acc;});
+  const lastM=lastActiveMonth();
+  let acc=0;const accData=tots.map((t,i)=>{acc+=t.saldo;return i<=lastM?acc:null;});
   dCharts.econ=new Chart(document.getElementById('chartEconomia'),{
     type:'line',
     data:{labels:MONTHS,datasets:[{data:accData,borderColor:'#1b854f',backgroundColor:'rgba(27,133,79,0.08)',borderWidth:2,pointBackgroundColor:(ctx)=>tots[ctx.dataIndex].receita>0?'#1b854f':'transparent',pointBorderColor:(ctx)=>tots[ctx.dataIndex].receita>0?'#1b854f':'transparent',pointRadius:4,fill:true,tension:.4}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)}}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:'#9a8e7e',font:{family:'Plus Jakarta Sans',size:10},maxRotation:0}},y:{grid:{color:'#f4ede2'},border:{display:false},ticks:{color:'#9a8e7e',font:{family:'Plus Jakarta Sans',size:10},callback:v=>v>=1000?'R$'+(v/1000).toFixed(0)+'k':'R$'+v}}}}
   });
-  const rC={},dC={};
-  state.receitas.forEach(r=>{rC[r.tag]=(rC[r.tag]||0)+r.value;});
-  state.despesas.forEach(d=>{dC[d.tag]=(dC[d.tag]||0)+d.value;});
+  const rC=catTotals(state.receitas),dC=catTotals(state.despesas);
   const mkDonut=(id,data,palette,centerId,legendId)=>{
-    const lbls=Object.keys(data),vals=Object.values(data),tot=vals.reduce((a,b)=>a+b,0);
+    const{lbls,vals,tot}=data;
     const cEl=document.getElementById(centerId);
     if(cEl)cEl.innerHTML=tot>0?`<div style="font-size:12px;font-weight:700;color:#2a2218;">${fmtK(tot)}</div><div style="font-size:9px;color:#9a8e7e;">total</div>`:'';
-    document.getElementById(legendId).innerHTML=tot>0?lbls.map((l,i)=>`<div class="donut-legend-item"><div class="donut-legend-dot" style="background:${palette[i%palette.length]}"></div><div class="donut-legend-label">${TAG_ICON[l]||''} ${l}</div><div class="donut-legend-pct">${((vals[i]/tot)*100).toFixed(0)}%</div></div>`).join(''):'<div style="font-size:12px;color:#9a8e7e;">Sem dados ainda</div>';
+    document.getElementById(legendId).innerHTML=tot>0?lbls.map((l,i)=>`<div class="donut-legend-item"><div class="donut-legend-dot" style="background:${palette[i%palette.length]}"></div><div class="donut-legend-label">${TAG_ICON[l]||''} ${escHTML(l)}</div><div class="donut-legend-pct" style="color:var(--text);font-weight:700;margin-right:6px;">${fmtK(vals[i])}</div><div class="donut-legend-pct">${((vals[i]/tot)*100).toFixed(0)}%</div></div>`).join(''):'<div style="font-size:12px;color:#9a8e7e;">Sem dados ainda</div>';
     return new Chart(document.getElementById(id),{type:'doughnut',data:{labels:lbls,datasets:[{data:vals,backgroundColor:palette.slice(0,lbls.length),borderWidth:0,borderRadius:8,spacing:3}]},options:{responsive:true,maintainAspectRatio:true,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)} (${((c.raw/tot)*100).toFixed(0)}%)`}}}}});
   };
   dCharts.rec=mkDonut('chartReceitas',rC,GP,'donut-rec-center','legend-receitas');
@@ -1138,16 +1163,36 @@ function saveTransaction(){
   closeModal('modal-add');
   renderActivePage();
 }
+// autocomplete de recorrentes (desktop): sem acento/caixa, prefixo primeiro, navegável por teclado
+let _acItems=[],_acIdx=-1;
 function showAutocomplete(v){
   const l=document.getElementById('autocomplete-list');
-  if(_editTxId||!v||v.length<2){l.style.display='none';return;}
-  const m=state.recorrentes.filter(r=>r.type===curType&&r.name.toLowerCase().includes(v.toLowerCase()));
-  if(!m.length){l.style.display='none';return;}
-  l.innerHTML=m.map(x=>`<div class="autocomplete-item" onclick="applyAC('${x.id}')"><strong style="color:var(--text)">${TAG_ICON[x.tag]||''} ${x.name}</strong><small>${x.tag}${x.meio?' · '+x.meio:''} · ${x.value>0?fmt(x.value):'variável'}</small></div>`).join('');
-  l.style.display='block';
+  const q=(v||'').trim();
+  if(_editTxId||!q){l.style.display='none';_acItems=[];return;}
+  _acItems=recSearch(q,curType).slice(0,6);
+  if(!_acItems.length||(_acItems.length===1&&normTxt(_acItems[0].name)===normTxt(q))){l.style.display='none';_acItems=[];return;}
+  _acIdx=0;renderAC();l.style.display='block';
 }
-function applyAC(id){const r=state.recorrentes.find(x=>x.id===id);if(!r)return;document.getElementById('tx-name').value=r.name;if(r.value>0)document.getElementById('tx-value').value=r.value;document.getElementById('tx-tag').value=r.tag;if(r.meio)document.getElementById('tx-meio').value=r.meio;hideAutocomplete();}
-function hideAutocomplete(){document.getElementById('autocomplete-list').style.display='none';}
+function renderAC(){
+  document.getElementById('autocomplete-list').innerHTML=_acItems.map((x,i)=>`<div class="autocomplete-item${i===_acIdx?' active':''}" onmousedown="event.preventDefault()" onclick="applyAC('${x.id}')"><strong style="color:var(--text)">${TAG_ICON[x.tag]||''} ${escHTML(x.name)}</strong> <small>${escHTML(x.tag)}${x.meio?' · '+escHTML(x.meio):''} · ${x.value>0?fmt(x.value):'variável'}</small></div>`).join('');
+}
+function acKey(e){
+  const l=document.getElementById('autocomplete-list');
+  if(l.style.display==='none'||!_acItems.length)return;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();_acIdx=(_acIdx+(e.key==='ArrowDown'?1:-1)+_acItems.length)%_acItems.length;renderAC();}
+  else if(e.key==='Enter'||e.key==='Tab'){if(_acIdx>=0){e.preventDefault();applyAC(_acItems[_acIdx].id);}}
+  else if(e.key==='Escape'){e.stopPropagation();hideAutocomplete();}
+}
+function applyAC(id){
+  const r=state.recorrentes.find(x=>x.id===id);if(!r)return;
+  document.getElementById('tx-name').value=r.name;
+  if(r.value>0)document.getElementById('tx-value').value=r.value;
+  const tag=document.getElementById('tx-tag');if([...tag.options].some(o=>o.value===r.tag))tag.value=r.tag;
+  if(r.meio)document.getElementById('tx-meio').value=r.meio;
+  hideAutocomplete();
+  document.getElementById('tx-value').focus();
+}
+function hideAutocomplete(){document.getElementById('autocomplete-list').style.display='none';_acItems=[];}
 
 // ---- GOAL MODAL (meta + data de início) ----
 function openGoalModal(){
@@ -1242,7 +1287,7 @@ function mNav(screen){
   const titles={home:null,analise:'Análise',lancamentos:'Lançamentos',meses:'Meses'};
   if(screen==='home'){homeBar.style.display='flex';titleBar.style.display='none';}
   else{homeBar.style.display='none';titleBar.style.display='block';titleBar.textContent=titles[screen];}
-  document.getElementById('m-scroll').scrollTop=0;
+  document.getElementById('m-scroll').scrollTop=0;window.scrollTo(0,0);
   if(screen==='home')mRenderHome();
   if(screen==='analise')mRenderAnalise();
   if(screen==='lancamentos')mRenderLancamentos();
@@ -1343,25 +1388,69 @@ function mRenderHome(){
       </div>
     </div>
 
-    <div style="margin:0 16px 8px;display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-size:12px;font-weight:700;color:#2a2218;">Recorrentes</div>
+    ${mRecHomeSection()}
+    <div style="height:64px;"></div>
+  </div>`;
+}
+
+// ---- RECORRENTES NA HOME: pendentes do mês primeiro + "ver todas" ----
+const M_REC_HOME_MAX=5;
+function mRecRow(r,done,onclick){
+  return`<div onclick="${onclick}" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fffefb;border:1px solid #ddd5c5;border-radius:12px;margin-bottom:6px;cursor:pointer;${done?'opacity:.55;':''}">
+    ${mTagIcon(r.tag,34)}
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:600;color:#2a2218;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHTML(r.name)}</div>
+      <div style="font-size:10px;color:#9a8e7e;margin-top:1px;">${r.type==='receita'?'↑':'↓'} ${escHTML(r.tag)}${done?' · <span style="color:#1b854f;font-weight:700;">✓ lançada este mês</span>':''}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:13px;font-weight:700;color:${r.type==='receita'?'#1b854f':'#b54d3a'};white-space:nowrap;">${r.value>0?fmt(r.value):'variável'}</div>
+      <div style="font-size:16px;color:#cdc4b2;">›</div>
+    </div>
+  </div>`;
+}
+function mRecHomeSection(){
+  const all=state.recorrentes;
+  if(!all.length)return`<div style="margin:0 16px 8px;font-size:12px;font-weight:700;color:#2a2218;">Recorrentes</div>
+    <div style="margin:0 16px;text-align:center;padding:1rem;color:#9a8e7e;font-size:12px;">Cadastre recorrentes em Configurações para lançar com um toque.</div>`;
+  const sorted=recSorted(all);
+  const pending=sorted.filter(x=>!x.done).length;
+  const shown=sorted.slice(0,M_REC_HOME_MAX);
+  return`
+    <div style="margin:0 16px 8px;display:flex;justify-content:space-between;align-items:baseline;">
+      <div style="font-size:12px;font-weight:700;color:#2a2218;">Recorrentes <span style="font-weight:500;color:#9a8e7e;">· ${pending?`${pending} pendente${pending>1?'s':''} este mês`:'todas lançadas este mês ✓'}</span></div>
       <div style="font-size:10px;color:#9a8e7e;">toque para lançar</div>
     </div>
     <div style="margin:0 16px;">
-      ${state.recorrentes.slice(0,5).map(r=>`
-        <div onclick="mOpenSheet('${r.type}','${r.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fffefb;border:1px solid #ddd5c5;border-radius:12px;margin-bottom:6px;cursor:pointer;">
-          ${mTagIcon(r.tag,34)}
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;font-weight:600;color:#2a2218;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.name}</div>
-            <div style="font-size:10px;color:#9a8e7e;margin-top:1px;">${r.type==='receita'?'↑':'↓'} ${r.tag}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="font-size:13px;font-weight:700;color:${r.type==='receita'?'#1b854f':'#b54d3a'};white-space:nowrap;">${r.value>0?fmtK(r.value):'—'}</div>
-            <div style="font-size:16px;color:#cdc4b2;">›</div>
-          </div>
-        </div>`).join('')||'<div style="text-align:center;padding:1rem;color:#9a8e7e;font-size:12px;">Cadastre recorrentes em Configurações para lançar com um toque.</div>'}
-    </div>
-  </div>`;
+      ${shown.map(x=>mRecRow(x.r,x.done,`mOpenSheet('${x.r.type}','${x.r.id}')`)).join('')}
+      ${all.length>M_REC_HOME_MAX?`<button onclick="mShowAllRec()" style="width:100%;padding:11px;border-radius:12px;border:1px dashed #cdc4b2;background:none;font-size:12px;font-weight:700;color:#1b854f;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;">Ver todas as ${all.length} recorrentes →</button>`:''}
+    </div>`;
+}
+// sheet com todas as recorrentes: busca + filtro por tipo, agrupadas por status no mês
+let _mRecFilter='todas';
+function mShowAllRec(){
+  _mRecFilter='todas';
+  mSheet(`
+    <div style="padding:0 0 8px;">
+      <div style="${MTITLE}margin-bottom:10px;">Recorrentes</div>
+      <input id="mrec-q" class="m-input" placeholder="🔍 Buscar por nome ou categoria" autocomplete="off" oninput="mRenderAllRec()" style="margin-bottom:10px;">
+      <div class="m-toggle" style="margin-bottom:12px;">
+        ${['todas','despesa','receita'].map(k=>`<button class="m-toggle-btn" id="mrec-f-${k}" onclick="_mRecFilter='${k}';mRenderAllRec()">${k==='todas'?'Todas':k==='despesa'?'↓ Despesas':'↑ Receitas'}</button>`).join('')}
+      </div>
+      <div id="mrec-list"></div>
+    </div>`);
+  mRenderAllRec();
+}
+function mRenderAllRec(){
+  ['todas','despesa','receita'].forEach(k=>{const b=document.getElementById('mrec-f-'+k);if(!b)return;const on=k===_mRecFilter;b.style.background=on?'#fffefb':'none';b.style.color=on?(k==='receita'?'#1b854f':k==='despesa'?'#b54d3a':'#2a2218'):'#9a8e7e';});
+  const q=document.getElementById('mrec-q')?.value||'';
+  const items=recSorted(recSearch(q,_mRecFilter==='todas'?null:_mRecFilter));
+  const pend=items.filter(x=>!x.done),done=items.filter(x=>x.done);
+  const row=x=>mRecRow(x.r,x.done,`mCloseSheet();mOpenSheet('${x.r.type}','${x.r.id}')`);
+  const head=t=>`<div style="font-size:10px;color:#9a8e7e;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:10px 2px 6px;">${t}</div>`;
+  document.getElementById('mrec-list').innerHTML=!items.length
+    ?`<div style="text-align:center;padding:1.5rem;color:#9a8e7e;font-size:12px;">Nenhuma recorrente encontrada.</div>`
+    :(pend.length?head(`Pendentes este mês · ${pend.length}`)+pend.map(row).join(''):'')
+     +(done.length?head(`Já lançadas · ${done.length}`)+done.map(row).join(''):'');
 }
 
 // ---- HERO DETAIL SHEET ----
@@ -1511,18 +1600,29 @@ function mShowScoreDetail(){
 }
 
 // ========== ANÁLISE SCREEN ==========
-let mAnaliseMonthRec='all', mAnaliseMonthDesp='all';
+// filtro de mês dos donuts ('all' = ano inteiro). Objeto explícito: variáveis `let` não ficam em window,
+// e ler window[...] fazia o gráfico abrir vazio até o usuário clicar em um filtro.
+const mAnaliseFilter={mAnaliseMonthRec:'all',mAnaliseMonthDesp:'all'};
+// último mês com movimentação (para a linha não "andar" até dezembro sem dados)
+function lastActiveMonth(){let l=-1;for(let i=0;i<12;i++){const t=getMT(i);if(t.receita>0||t.despesa>0)l=i;}return l;}
+// agrupa por categoria, do maior para o menor
+function catTotals(list){
+  const m={};list.forEach(t=>{m[t.tag]=(m[t.tag]||0)+t.value;});
+  const e=Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  return{lbls:e.map(x=>x[0]),vals:e.map(x=>x[1]),tot:e.reduce((s,x)=>s+x[1],0)};
+}
 
 function mRenderAnalise(){
   const el=document.getElementById('m-screen-analise');
   el.innerHTML=
     `<div id="m-line-card" class="m-card" style="margin-bottom:12px;"><div style="font-size:9px;color:#9a8e7e;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">Economia Acumulada — ${APP_YEAR}</div><div style="height:155px;position:relative;"><canvas id="m-chart-line"></canvas></div></div>`
     +'<div id="m-donut-rec" class="m-card" style="margin-bottom:12px;"></div>'
-    +'<div id="m-donut-desp" class="m-card" style="margin-bottom:12px;"></div>';
+    +'<div id="m-donut-desp" class="m-card" style="margin-bottom:12px;"></div><div style="height:64px;"></div>';
 
   Object.values(mCharts).forEach(c=>{try{c.destroy();}catch(e){}});mCharts={};
 
-  let acc=0;const accData=MONTHS.map((_,i)=>{const t=getMT(i);acc+=t.saldo;return acc;});
+  const lastM=lastActiveMonth();
+  let acc=0;const accData=MONTHS.map((_,i)=>{const t=getMT(i);acc+=t.saldo;return i<=lastM?acc:null;});
   mCharts.line=new Chart(document.getElementById('m-chart-line'),{
     type:'line',
     data:{labels:MONTHS_S,datasets:[{data:accData,borderColor:'#1b854f',backgroundColor:'rgba(27,133,79,.09)',borderWidth:2,
@@ -1540,32 +1640,32 @@ function mRenderAnalise(){
 
 function mBuildDonut(containerId,title,transactions,palette,canvasId,filterVar){
   const container=document.getElementById(containerId);
-  const selMonth=window[filterVar];
+  const selMonth=mAnaliseFilter[filterVar]??'all';
   const activeMonths=[...new Set(transactions.map(t=>t.month))].filter(m=>getMT(m).receita>0||getMT(m).despesa>0).sort((a,b)=>a-b);
   const filtered=selMonth==='all'?transactions:transactions.filter(t=>t.month===selMonth);
-  const catData={};filtered.forEach(t=>{catData[t.tag]=(catData[t.tag]||0)+t.value;});
-  const lbls=Object.keys(catData),vals=Object.values(catData),tot=vals.reduce((a,b)=>a+b,0);
+  const{lbls,vals,tot}=catTotals(filtered);
 
   container.innerHTML=`
     <div style="font-size:9px;color:#9a8e7e;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">${title}</div>
     <div style="display:flex;gap:5px;margin-bottom:10px;overflow-x:auto;" class="ns">
-      <button class="m-pill" style="background:${selMonth==='all'?'#1b854f':'#ece4d8'};color:${selMonth==='all'?'#fff':'#9a8e7e'};" onclick="window['${filterVar}']='all';mBuildDonut('${containerId}','${title}',${filterVar==='mAnaliseMonthRec'?'state.receitas':'state.despesas'},${filterVar==='mAnaliseMonthRec'?'GP':'TP'},'${canvasId}','${filterVar}')">Todos</button>
-      ${activeMonths.map(i=>`<button class="m-pill" style="background:${selMonth===i?'#1b854f':'#ece4d8'};color:${selMonth===i?'#fff':'#9a8e7e'};" onclick="window['${filterVar}']=${i};mBuildDonut('${containerId}','${title}',${filterVar==='mAnaliseMonthRec'?'state.receitas':'state.despesas'},${filterVar==='mAnaliseMonthRec'?'GP':'TP'},'${canvasId}','${filterVar}')">${MONTHS_S[i]}</button>`).join('')}
+      <button class="m-pill" style="background:${selMonth==='all'?'#1b854f':'#ece4d8'};color:${selMonth==='all'?'#fff':'#9a8e7e'};" onclick="mAnaliseFilter['${filterVar}']='all';mBuildDonut('${containerId}','${title}',${filterVar==='mAnaliseMonthRec'?'state.receitas':'state.despesas'},${filterVar==='mAnaliseMonthRec'?'GP':'TP'},'${canvasId}','${filterVar}')">Ano todo</button>
+      ${activeMonths.map(i=>`<button class="m-pill" style="background:${selMonth===i?'#1b854f':'#ece4d8'};color:${selMonth===i?'#fff':'#9a8e7e'};" onclick="mAnaliseFilter['${filterVar}']=${i};mBuildDonut('${containerId}','${title}',${filterVar==='mAnaliseMonthRec'?'state.receitas':'state.despesas'},${filterVar==='mAnaliseMonthRec'?'GP':'TP'},'${canvasId}','${filterVar}')">${MONTHS_S[i]}</button>`).join('')}
     </div>
     ${tot===0?`<div style="text-align:center;padding:1.5rem;color:#9a8e7e;font-size:12px;">Sem dados</div>`:`
     <div style="display:flex;gap:12px;align-items:center;">
-      <div style="width:130px;height:130px;position:relative;flex-shrink:0;">
+      <div style="width:112px;height:112px;position:relative;flex-shrink:0;">
         <canvas id="${canvasId}"></canvas>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
           <div style="font-size:11px;font-weight:700;color:#2a2218;">${fmtK(tot)}</div>
           <div style="font-size:9px;color:#9a8e7e;">total</div>
         </div>
       </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
         ${lbls.map((l,i)=>`<div style="display:flex;align-items:center;gap:6px;">
           <div style="width:8px;height:8px;border-radius:3px;background:${palette[i%palette.length]};flex-shrink:0;"></div>
-          <div style="flex:1;font-size:10px;color:#6a5e4e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${TAG_ICON[l]||''} ${l}</div>
-          <div style="font-size:10px;color:#9a8e7e;font-weight:600;">${((vals[i]/tot)*100).toFixed(0)}%</div>
+          <div style="flex:1;min-width:0;font-size:11px;color:#6a5e4e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${TAG_ICON[l]||''} ${escHTML(l)}</div>
+          <div style="font-size:11px;color:#2a2218;font-weight:700;white-space:nowrap;">${fmtK(vals[i])}</div>
+          <div style="font-size:10px;color:#9a8e7e;font-weight:600;width:30px;text-align:right;">${((vals[i]/tot)*100).toFixed(0)}%</div>
         </div>`).join('')}
       </div>
     </div>`}`;
@@ -1574,8 +1674,8 @@ function mBuildDonut(containerId,title,transactions,palette,canvasId,filterVar){
     if(mCharts[canvasId])try{mCharts[canvasId].destroy();}catch(e){}
     mCharts[canvasId]=new Chart(document.getElementById(canvasId),{
       type:'doughnut',
-      data:{labels:lbls,datasets:[{data:vals,backgroundColor:palette.slice(0,lbls.length),borderWidth:0,borderRadius:8,spacing:3}]},
-      options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtK(c.raw)} (${((c.raw/tot)*100).toFixed(0)}%)`}}}}
+      data:{labels:lbls,datasets:[{data:vals,backgroundColor:palette.slice(0,lbls.length),borderWidth:0,borderRadius:4,spacing:2}]},
+      options:{responsive:true,maintainAspectRatio:true,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtK(c.raw)} (${((c.raw/tot)*100).toFixed(0)}%)`}}}}
     });
   }
 }
@@ -1748,7 +1848,7 @@ function mOpenSheet(type, recId, editId){
         <button class="m-toggle-btn" id="mst-rec" onclick="mSheetType='receita';mUpdateSheet()" style="background:${mSheetType==='receita'?'#fffefb':'none'};color:${mSheetType==='receita'?'#1b854f':'#9a8e7e'};">↑ Receita</button>
         <button class="m-toggle-btn" id="mst-desp" onclick="mSheetType='despesa';mUpdateSheet()" style="background:${mSheetType==='despesa'?'#fffefb':'none'};color:${mSheetType==='despesa'?'#b54d3a':'#9a8e7e'};">↓ Despesa</button>
       </div>`}
-      <div style="margin-bottom:11px;">${mSheetLabel('Nome')}<input id="ms-name" class="m-input" placeholder="Ex: Spotify" value="${(pre?pre.name:'').replace(/"/g,'&quot;')}"></div>
+      <div style="margin-bottom:11px;">${mSheetLabel('Nome')}<input id="ms-name" class="m-input" placeholder="${editTx?'Ex: Spotify':'Digite para buscar nas recorrentes'}" autocomplete="off" oninput="mAC(this.value)" value="${(pre?pre.name:'').replace(/"/g,'&quot;')}"><div id="ms-ac"></div></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Valor (R$)')}<input id="ms-val" type="number" class="m-input" placeholder="0,00" value="${pre&&pre.value>0?pre.value:''}"></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Data (opcional)')}<input id="ms-date" type="date" class="m-input" value="${editTx?(editTx.date||''):''}" onchange="syncMonthFromDate('ms-date','ms-month')"></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Mês')}<select id="ms-month" class="m-input">${MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('')}</select></div>
@@ -1759,6 +1859,36 @@ function mOpenSheet(type, recId, editId){
         <button onclick="mSaveTx()" style="${MBTN_P}">Salvar</button>
       </div>
     </div>`);
+}
+
+// ---- AUTOCOMPLETE DE RECORRENTES (mobile): sugere enquanto digita, de qualquer tipo ----
+function mAC(v){
+  const box=document.getElementById('ms-ac');if(!box)return;
+  const q=(v||'').trim();
+  if(_mEditId||!q){box.innerHTML='';return;}
+  const m=recSearch(q,null).slice(0,5);
+  if(!m.length||(m.length===1&&normTxt(m[0].name)===normTxt(q))){box.innerHTML='';return;}
+  box.innerHTML=`<div style="margin-top:6px;border:1px solid #ddd5c5;border-radius:12px;background:#fffefb;overflow:hidden;box-shadow:0 6px 18px rgba(42,34,24,.08);">
+    <div style="font-size:9px;color:#9a8e7e;text-transform:uppercase;letter-spacing:.8px;font-weight:700;padding:8px 12px 4px;">Recorrentes</div>
+    ${m.map(r=>`<div onmousedown="event.preventDefault()" onclick="mApplyRec('${r.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #f0e9dd;cursor:pointer;">
+      ${mTagIcon(r.tag,28)}
+      <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#2a2218;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHTML(r.name)}</div>
+      <div style="font-size:10px;color:#9a8e7e;">${r.type==='receita'?'↑ Receita':'↓ Despesa'} · ${escHTML(r.tag)}${r.meio?' · '+escHTML(r.meio):''}</div></div>
+      <div style="font-size:12px;font-weight:700;color:${r.type==='receita'?'#1b854f':'#b54d3a'};white-space:nowrap;">${r.value>0?fmt(r.value):'variável'}</div>
+    </div>`).join('')}
+  </div>`;
+  // mantém as sugestões visíveis acima do teclado
+  requestAnimationFrame(()=>box.scrollIntoView({block:'nearest',behavior:'smooth'}));
+}
+function mApplyRec(id){
+  const r=state.recorrentes.find(x=>x.id===id);if(!r)return;
+  if(document.getElementById('mst-rec')){mSheetType=r.type;mUpdateSheet();}
+  document.getElementById('ms-name').value=r.name;
+  if(r.value>0)document.getElementById('ms-val').value=r.value;
+  const tag=document.getElementById('ms-tag');if([...tag.options].some(o=>o.value===r.tag))tag.value=r.tag;
+  const meio=document.getElementById('ms-meio');if(r.meio&&meio&&[...meio.options].some(o=>o.value===r.meio))meio.value=r.meio;
+  document.getElementById('ms-ac').innerHTML='';
+  if(!(r.value>0))document.getElementById('ms-val').focus();
 }
 
 function mUpdateSheet(){
