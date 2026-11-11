@@ -39,7 +39,7 @@ por agente de IA → validação.
 ## Arquitetura
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Cliente["Navegador / PWA"]
         UI["index.html<br/>(desktop + mobile)"]
         SW["sw.js<br/>network-first + auto-update"]
