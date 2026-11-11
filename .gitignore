@@ -1,0 +1,15 @@
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dependencias / ambiente
+node_modules/
+.env
+.env.*
+
+# Claude Code (config local)
+.claude/settings.local.json
+
+# Netlify CLI
+.netlify/
