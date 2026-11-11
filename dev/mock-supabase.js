@@ -5,12 +5,14 @@
   const id=()=>crypto.randomUUID();
   // ?v12 na URL simula o banco antes da migração 1.3 (sem dia/limite/parcelas)
   const V13=!/[?&]v12(&|$)/.test(location.search);
+  // ?noicon simula o banco sem a coluna de emoji (1.4)
+  const ICON=V13&&!/[?&]noicon(&|$)/.test(location.search);
   const db={profiles:[],transactions:[],recurrents:[],categories:[]};
   db.profiles.push({id:UID,name:'Ana Teste',birth_date:null,avatar_url:null,start_date:Y+'-01-01',goal:15000});
   const cats={receita:['Salário','Bônus','Investimento','Atividade complementar','Presente'],
     despesa:['Alimentação','Cuidados Pessoais','Lazer','Presente/Doação','Saúde','Transporte','Utilitários','Vestuário'],
     meio:['Crédito','Débito','Pix']};
-  Object.entries(cats).forEach(([t,a])=>a.forEach(n=>db.categories.push({id:id(),user_id:UID,type:t,name:n,...(V13?{monthly_limit:t==='despesa'&&n==='Alimentação'?1200:t==='despesa'&&n==='Lazer'?250:null}:{})})));
+  Object.entries(cats).forEach(([t,a])=>a.forEach(n=>db.categories.push({id:id(),user_id:UID,type:t,name:n,...(ICON?{icon:null}:{}),...(V13?{monthly_limit:t==='despesa'&&n==='Alimentação'?1200:t==='despesa'&&n==='Lazer'?250:null}:{})})));
   const recs=[
     ['despesa','Aluguel',1800,'Utilitários','Pix'],['despesa','Condomínio',450,'Utilitários','Pix'],
     ['despesa','Internet',120,'Utilitários','Crédito'],['despesa','Academia',99.9,'Saúde','Crédito'],
@@ -59,6 +61,7 @@
     };
     function run(){
       const T=db[table];const match=r=>filters.every(f=>f(r));
+      if(!ICON&&payload&&op!=='select'&&(Array.isArray(payload)?payload:[payload]).some(r=>'icon' in r))return{data:null,error:{message:"Could not find the 'icon' column",code:'PGRST204'},status:400};
       if(!V13&&payload&&op!=='select'){const bad=['day','monthly_limit','installment_group','installment_no','installment_total'];
         const rows=Array.isArray(payload)?payload:[payload];const col=rows.flatMap(Object.keys).find(k=>bad.includes(k));
         if(col)return{data:null,error:{message:`Could not find the '${col}' column of '${table}' in the schema cache`,code:'PGRST204'},status:400};}

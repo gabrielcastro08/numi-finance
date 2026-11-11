@@ -445,6 +445,99 @@ body{font-variant-numeric:tabular-nums;}
 @keyframes numiGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,255,255,0));}50%{filter:drop-shadow(0 0 14px rgba(255,255,255,.35));}}
 #numi-splash img{animation:numiWrite 1.05s cubic-bezier(.65,0,.25,1) both,numiGlow 2.4s ease-in-out 1.05s infinite!important;}
 </style>
+<style id="nx-styles-14">
+/* ---------- valor estilo Nubank ---------- */
+.nx-money-big,input[data-money]{font-family:var(--font-display)!important;font-size:22px!important;font-weight:700!important;letter-spacing:-.3px;color:var(--text)!important;}
+input[data-money]::placeholder{color:var(--text3);font-weight:600;}
+/* ---------- botão de data ---------- */
+.nx-date-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 13px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);font:600 14px var(--font-main);color:var(--text);cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;}
+.nx-date-btn:hover{border-color:var(--green);}
+.nx-date-btn svg{color:var(--green);flex-shrink:0;}
+.nx-date-btn.empty span{color:var(--text3);font-weight:500;}
+.nx-date-btn.m{border-radius:11px;font-size:13px;}
+/* ---------- calendário ---------- */
+#nx-dp{position:fixed;inset:0;z-index:7000;display:none;}
+#nx-dp.mobile{background:rgba(42,34,24,.35);}
+.nx-dp-box{position:fixed;width:300px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 50px rgba(42,34,24,.22);padding:14px;animation:dpIn .16s ease-out;}
+#nx-dp.mobile .nx-dp-box{left:50%!important;top:auto!important;bottom:20px;transform:translateX(-50%);width:min(340px,calc(100% - 32px));}
+@keyframes dpIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+#nx-dp.mobile .nx-dp-box{animation:none;}
+.nx-dp-quick{display:flex;gap:6px;margin-bottom:12px;}
+.nx-dp-quick button{flex:1;padding:8px 6px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);font:700 12px var(--font-main);color:var(--green3);cursor:pointer;}
+.nx-dp-quick button.ghost{color:var(--text3);font-weight:600;background:none;}
+.nx-dp-quick button:hover{border-color:var(--green);}
+.nx-dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.nx-dp-head b{font-family:var(--font-display);font-style:italic;font-size:17px;color:var(--text);}
+.nx-dp-head b span{font-style:normal;font-family:var(--font-main);font-size:13px;color:var(--text3);font-weight:600;margin-left:4px;}
+.nx-dp-head button{width:34px;height:34px;border-radius:10px;border:none;background:var(--bg2);font-size:20px;color:var(--text2);cursor:pointer;line-height:1;}
+.nx-dp-head button:hover{background:var(--green-dim);color:var(--green3);}
+.nx-dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.nx-dp-grid.wd span{font-size:11px;font-weight:700;color:var(--text3);text-align:center;padding:4px 0;}
+.nx-dp-grid button{aspect-ratio:1;border:none;border-radius:50%;background:none;font:600 13px var(--font-main);color:var(--text);cursor:pointer;}
+.nx-dp-grid button:hover{background:var(--bg2);}
+.nx-dp-grid button.today{box-shadow:inset 0 0 0 1.5px var(--green);color:var(--green3);}
+.nx-dp-grid button.sel{background:var(--green);color:#fff;box-shadow:0 4px 10px rgba(27,133,79,.35);}
+/* ---------- categorias ---------- */
+#cat-grid{display:block!important;}
+.nx-cat-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:18px;align-items:start;max-width:1180px;}
+.nx-cat-side{display:flex;flex-direction:column;gap:16px;}
+.nx-cat-tabs{margin-bottom:14px;}
+.nx-cat-tabs button small{font-size:11px;color:var(--text3);font-weight:600;margin-left:3px;}
+.nx-cat-list{display:flex;flex-direction:column;gap:8px;}
+.nx-cat-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;}
+.nx-cat-row:hover{border-color:#d6cbb8;box-shadow:var(--shadow-1);transform:translateY(-1px);}
+.nx-cat-ico{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;}
+.nx-cat-main{flex:1;min-width:0;}
+.nx-cat-name{font-size:14.5px;font-weight:700;color:var(--text);}
+.nx-cat-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+.nx-cat-limit{margin-top:8px;max-width:420px;}
+.nx-cat-limit-top{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px;}
+.nx-cat-limit-top small{color:var(--text3);}
+.nx-cat-addlimit{margin-top:6px;background:none;border:none;padding:0;font:700 12px var(--font-main);color:var(--green);cursor:pointer;}
+.nx-cat-addlimit:hover{text-decoration:underline;}
+.nx-cat-actions{display:flex;gap:4px;opacity:.55;transition:opacity .15s;}
+.nx-cat-row:hover .nx-cat-actions{opacity:1;}
+.nx-cat-actions button{width:32px;height:32px;border-radius:10px;border:none;background:none;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.nx-cat-actions button svg{width:14px;height:14px;}
+.nx-cat-actions button:hover{background:var(--green-dim);color:var(--green);}
+.nx-cat-actions button.del:hover{background:var(--red-dim);color:var(--red);}
+.nx-cat-new{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:1.5px dashed var(--border2);border-radius:16px;background:none;font:700 13px var(--font-main);color:var(--green);cursor:pointer;margin-top:4px;}
+.nx-cat-new span{font-size:18px;line-height:1;}
+.nx-cat-new:hover{background:var(--green-dim);border-color:var(--green);}
+.nx-cat-ed-top{display:flex;gap:12px;align-items:flex-end;}
+.nx-cat-ed-ico{width:58px;height:58px;border-radius:18px;border:1px solid var(--border);background:var(--bg2);font-size:28px;cursor:default;flex-shrink:0;}
+.nx-emoji-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:4px;max-height:176px;overflow-y:auto;padding:6px;border:1px solid var(--border);border-radius:14px;background:var(--bg2);}
+.nx-emoji-grid button{height:40px;border:none;border-radius:10px;background:none;font-size:20px;cursor:pointer;}
+.nx-emoji-grid button:hover{background:var(--surface);}
+.nx-emoji-grid button.on{background:var(--surface);box-shadow:inset 0 0 0 2px var(--green);}
+.is-mobile .nx-cat-row{padding:10px 12px;gap:11px;}
+.is-mobile .nx-cat-ico{width:38px;height:38px;font-size:18px;border-radius:12px;}
+.is-mobile .nx-cat-actions{opacity:1;}
+.is-mobile .nx-cat-tabs button{font-size:11px;padding:8px 2px;}
+/* ---------- meses ---------- */
+#months-grid{display:block!important;}
+.nx-month-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;}
+.nx-month{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px 20px;box-shadow:var(--shadow-1);cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:12px;}
+.nx-month:hover{transform:translateY(-3px);box-shadow:var(--shadow-2);}
+.nx-month.now{border-color:var(--green);box-shadow:0 0 0 1px var(--green),var(--shadow-1);}
+.nx-month.empty{cursor:default;background:none;box-shadow:none;border-style:dashed;justify-content:center;min-height:120px;}
+.nx-month.empty:hover{transform:none;box-shadow:none;}
+.nx-month-head{display:flex;justify-content:space-between;align-items:center;}
+.nx-month-name{font-family:var(--font-display);font-style:italic;font-size:20px;font-weight:600;color:var(--text);}
+.nx-month.empty .nx-month-name{color:var(--text3);}
+.nx-month-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.nx-month-badge.pos{background:var(--green-dim);color:var(--green3);}
+.nx-month-badge.neg{background:var(--red-dim);color:var(--red);}
+.nx-month-badge.now{background:var(--green);color:#fff;}
+.nx-month-emptytxt{font-size:13px;color:var(--text3);}
+.nx-month-saldo{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.1;}
+.nx-month-bars{display:flex;flex-direction:column;gap:8px;}
+.nx-month-bars>div{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;font-size:12px;}
+.nx-month-bars span{color:var(--text3);}
+.nx-month-bars b{font-weight:700;color:var(--text);font-size:12.5px;}
+.nx-month-foot{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text3);border-top:1px solid var(--bg2);padding-top:10px;}
+.nx-month-foot b{color:var(--text);}
+</style>
 </head>
 <body>
 
@@ -607,6 +700,8 @@ async function loadAll(){
   // reaplica por cima o que ainda está na fila offline
   ['profiles','transactions','recurrents','categories'].forEach(k=>raw[k]=_replay(k,raw[k].map(x=>({...x}))));
   HAS_V13=!!raw.categories[0]&&('monthly_limit' in raw.categories[0]);
+  HAS_ICON=!!raw.categories[0]&&('icon' in raw.categories[0]);
+  raw.categories.forEach(x=>{if(x.icon)TAG_ICON[x.name]=x.icon;});
   const p=raw.profiles[0]||null;
   state.profile=p;
   state.goal=Number(p?.goal||0);
@@ -643,6 +738,7 @@ function _q(op){
   const b=sb.from(op.t);
   if(op.k==='upsert')return op.opts?b.upsert(op.row,op.opts):b.upsert(op.row);
   if(op.k==='update')return b.update(op.row).eq('id',op.id);
+  if(op.k==='updateWhere')return b.update(op.row).match(op.match);
   return b.delete().eq('id',op.id);
 }
 // lança erro só quando vale tentar de novo (rede/servidor); erro de validação é descartado e avisado
@@ -678,6 +774,7 @@ function _replay(table,rows){
     if(op.t!==table)continue;
     if(op.k==='upsert'){const i=rows.findIndex(r=>r.id===op.row.id);if(i>=0)rows[i]={...rows[i],...op.row};else rows.push({...op.row});}
     else if(op.k==='update'){const r=rows.find(r=>r.id===op.id);if(r)Object.assign(r,op.row);}
+    else if(op.k==='updateWhere'){rows.forEach(r=>{if(Object.entries(op.match).every(([k,v])=>r[k]===v))Object.assign(r,op.row);});}
     else rows=rows.filter(r=>r.id!==op.id);
   }
   return rows;
@@ -983,8 +1080,8 @@ function recSorted(list){
   <div class="modal">
     <div class="modal-title" id="modal-add-title">Nova Receita</div>
     <div class="form-row"><label class="form-label">Nome</label><div class="autocomplete-wrap"><input class="form-input" id="tx-name" placeholder="Digite para buscar nas recorrentes" autocomplete="off" oninput="showAutocomplete(this.value)" onfocus="showAutocomplete(this.value)" onkeydown="acKey(event)" onblur="setTimeout(hideAutocomplete,150)"><div class="autocomplete-list" id="autocomplete-list" style="display:none"></div></div></div>
-    <div class="form-row"><label class="form-label">Valor (R$)</label><input class="form-input" id="tx-value" type="number" step="0.01" placeholder="0,00" oninput="instUI('tx')"></div>
-    <div class="form-row"><label class="form-label">Data (opcional)</label><input class="form-input" id="tx-date" type="date" onchange="syncMonthFromDate('tx-date','tx-month')"></div>
+    <div class="form-row"><label class="form-label">Valor (R$)</label><input class="form-input" id="tx-value" data-money inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" oninput="instUI('tx')"></div>
+    <div class="form-row"><label class="form-label">Data</label><input type="hidden" id="tx-date" onchange="syncMonthFromDate('tx-date','tx-month');instUI('tx')"><button type="button" class="nx-date-btn empty" data-for="tx-date" id="tx-date-btn" onclick="openDatePicker('tx-date')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Sem data</span></button></div>
     <div class="form-row"><label class="form-label" id="tx-month-lbl">Mês</label><select class="form-select" id="tx-month" onchange="instUI('tx')"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select></div>
     <div class="form-row"><label class="form-label">Tag</label><select class="form-select" id="tx-tag"></select></div>
     <div class="form-row" id="tx-meio-row"><label class="form-label">Meio</label><select class="form-select" id="tx-meio"></select></div>
@@ -1006,7 +1103,7 @@ function recSorted(list){
     <div class="modal-title" id="modal-rec-title">Nova Transação Recorrente</div>
     <div class="form-row"><label class="form-label">Tipo</label><select class="form-select" id="rec-type" onchange="updateRecorrenteForm()"><option value="receita">Receita</option><option value="despesa">Despesa</option></select></div>
     <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="rec-name" placeholder="Ex: Spotify"></div>
-    <div class="form-row"><label class="form-label">Valor (R$) — deixe 0 para valor variável</label><input class="form-input" id="rec-value" type="number" step="0.01" placeholder="0,00"></div>
+    <div class="form-row"><label class="form-label">Valor (R$) — deixe 0 para valor variável</label><input class="form-input" id="rec-value" data-money inputmode="numeric" autocomplete="off" placeholder="R$ 0,00 (variável)"></div>
     <div class="form-row" id="rec-day-row"><label class="form-label">Dia do mês (opcional)</label><input class="form-input" id="rec-day" type="number" min="1" max="31" placeholder="sem dia fixo"></div>
     <div class="form-row"><label class="form-label">Tag</label><select class="form-select" id="rec-tag"></select></div>
     <div class="form-row" id="rec-meio-row"><label class="form-label">Meio</label><select class="form-select" id="rec-meio"></select></div>
@@ -1250,7 +1347,7 @@ function instUI(p){
   const on=document.getElementById(p+'-inst')?.checked;const box=document.getElementById(p+'-inst-box');if(!box)return;
   box.style.display=on?'':'none';if(!on)return;
   const n=parseInt(document.getElementById(p+'-inst-n').value)||0;
-  const v=parseFloat(document.getElementById(p==='tx'?'tx-value':'ms-val').value)||0;
+  const v=moneyVal(p==='tx'?'tx-value':'ms-val')||0;
   const mode=document.getElementById(p+'-inst-mode').dataset.v;
   const m=parseInt(document.getElementById(p==='tx'?'tx-month':'ms-month').value);
   const date=document.getElementById(p==='tx'?'tx-date':'ms-date').value;
@@ -1529,6 +1626,226 @@ function openYearMenu(){openPanel(`<div class="nx-title">Ano</div>${yearMenuHTML
 </script>
 
 <!-- ============================================================ -->
+<!--  NUMI 1.4: campo de valor estilo Nubank, calendário próprio, -->
+<!--  gerenciador de categorias (emoji, editar, limite) e meses    -->
+<!-- ============================================================ -->
+<script>
+// ---------- valor: digita só números, a vírgula anda sozinha (1 → 0,01 → 0,12 → 1,23) ----------
+const moneyStr=v=>v>0?'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+function moneyVal(el){
+  el=typeof el==='string'?document.getElementById(el):el;const s=(el?.value||'').trim();
+  if(!s)return NaN;
+  if(/,/.test(s))return parseInt(s.replace(/\D/g,''),10)/100;
+  return parseFloat(s);
+}
+function moneyAttr(v){return moneyStr(v>0?v:0);}
+document.addEventListener('input',e=>{
+  const el=e.target;if(!el.matches||!el.matches('[data-money]'))return;
+  const d=el.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11);
+  el.value=d?moneyStr(parseInt(d,10)/100):'';
+  requestAnimationFrame(()=>{try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){}});
+},true);
+document.addEventListener('focusin',e=>{const el=e.target;if(el.matches&&el.matches('[data-money]'))requestAnimationFrame(()=>{try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){}});});
+// reformata valores colocados via código (ex.: 1800 → "R$ 1.800,00") e atualiza os rótulos de data
+function refreshInputs(root=document){
+  root.querySelectorAll('[data-money]').forEach(el=>{if(el.value&&!/,/.test(el.value)){const v=parseFloat(el.value);el.value=v>0?moneyStr(v):'';}});
+  root.querySelectorAll('.nx-date-btn').forEach(b=>dpLabel(b.dataset.for));
+}
+
+// ---------- calendário próprio ----------
+const WD=['D','S','T','Q','Q','S','S'];
+function dateFieldHTML(id,value,onchange,extraCls=''){
+  return`<input type="hidden" id="${id}" value="${value||''}" onchange="${onchange||''}">`
+    +`<button type="button" class="nx-date-btn ${extraCls}" data-for="${id}" id="${id}-btn" onclick="openDatePicker('${id}')">`
+    +`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`
+    +`<span>${value?dpHuman(value):'Sem data'}</span></button>`;
+}
+function dpHuman(iso){
+  if(!iso)return'Sem data';
+  const d=new Date(iso+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);
+  const diff=Math.round((d-t)/864e5);
+  const base=d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short',year:d.getFullYear()!==t.getFullYear()?'numeric':undefined}).replace(/\./g,'');
+  return diff===0?'Hoje · '+base:diff===-1?'Ontem · '+base:diff===1?'Amanhã · '+base:base.charAt(0).toUpperCase()+base.slice(1);
+}
+function dpLabel(id){const b=document.getElementById(id+'-btn'),i=document.getElementById(id);if(!b||!i)return;b.querySelector('span').textContent=dpHuman(i.value);b.classList.toggle('empty',!i.value);}
+let _dp=null;
+function openDatePicker(id){
+  const inp=document.getElementById(id);const btn=document.getElementById(id+'-btn');
+  // abre no mês da data escolhida ou no mês selecionado no formulário
+  const ms=document.getElementById(id==='tx-date'?'tx-month':id==='ms-date'?'ms-month':'');
+  let y,m;
+  if(inp.value){y=+inp.value.slice(0,4);m=+inp.value.slice(5,7)-1;}
+  else{m=ms?+ms.value:CUR_MONTH;y=APP_YEAR;}
+  _dp={id,y,m};
+  let o=document.getElementById('nx-dp');
+  if(!o){o=document.createElement('div');o.id='nx-dp';o.innerHTML='<div class="nx-dp-box" id="nx-dp-box"></div>';
+    o.addEventListener('mousedown',e=>{if(e.target===o)closeDatePicker();});document.body.appendChild(o);}
+  o.className=IS_MOBILE?'mobile':'';o.style.display='block';
+  dpRender();
+  const box=document.getElementById('nx-dp-box');
+  if(!IS_MOBILE){const r=btn.getBoundingClientRect();const h=box.offsetHeight;
+    box.style.left=Math.min(r.left,innerWidth-box.offsetWidth-12)+'px';
+    box.style.top=(r.bottom+6+h>innerHeight?Math.max(12,r.top-h-6):r.bottom+6)+'px';}
+}
+function closeDatePicker(){const o=document.getElementById('nx-dp');if(o)o.style.display='none';_dp=null;}
+function dpMove(n){let k=_dp.y*12+_dp.m+n;_dp.y=Math.floor(k/12);_dp.m=k%12;dpRender();}
+function dpPick(iso){
+  const inp=document.getElementById(_dp.id);inp.value=iso;inp.dispatchEvent(new Event('change'));
+  dpLabel(_dp.id);closeDatePicker();
+}
+function dpRender(){
+  const{y,m,id}=_dp;const sel=document.getElementById(id).value;const today=todayISO();
+  const first=new Date(y,m,1).getDay(),n=daysIn(y,m);
+  let cells='';for(let i=0;i<first;i++)cells+='<span></span>';
+  for(let d=1;d<=n;d++){const iso=isoOf(y,m,d);
+    cells+=`<button type="button" class="${iso===sel?'sel':''}${iso===today?' today':''}" onclick="dpPick('${iso}')">${d}</button>`;}
+  const yest=new Date();yest.setDate(yest.getDate()-1);
+  const yIso=`${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
+  document.getElementById('nx-dp-box').innerHTML=`
+    <div class="nx-dp-quick"><button type="button" onclick="dpPick('${today}')">Hoje</button><button type="button" onclick="dpPick('${yIso}')">Ontem</button><button type="button" class="ghost" onclick="dpPick('')">Sem data</button></div>
+    <div class="nx-dp-head"><button type="button" onclick="dpMove(-1)" aria-label="Mês anterior">‹</button><b>${MONTHS[m]} <span>${y}</span></b><button type="button" onclick="dpMove(1)" aria-label="Próximo mês">›</button></div>
+    <div class="nx-dp-grid wd">${WD.map(w=>`<span>${w}</span>`).join('')}</div>
+    <div class="nx-dp-grid">${cells}</div>`;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_dp)closeDatePicker();});
+
+// ---------- categorias: emoji, editar, renomear (em cascata) e limite ----------
+let HAS_ICON=false;
+const EMOJIS=['🍽️','🛒','🍔','☕','🍺','🏠','💡','💧','📶','📱','🚗','⛽','🚕','🚌','✈️','🏥','💊','🏋️','✨','💇','👕','👟','🎮','🎬','🎵','📚','🎓','🐶','👶','🎁','🎀','💝','⚙️','🧾','💳','🏦','💰','💼','📈','🪙','💸','🛍️','🧹','🔧','🏖️','🎉','⚽','🍷','🚬','❤️','🙏','🧸','💻','🧠','🌱','🏷️'];
+const CAT_TABS=[['despesa','Despesas'],['receita','Receitas'],['meio','Meios de pagamento']];
+let _catTab='despesa';
+function catUsage(type,name){
+  const l=TX_ALL.filter(t=>t.year===APP_YEAR&&(type==='meio'?t.kind==='despesa'&&t.meio===name:t.kind===type&&t.tag===name));
+  return{n:l.length,v:sumV(l)};
+}
+function catIcon(type,name){return type==='meio'?(TAG_ICON[name]||'💳'):(TAG_ICON[name]||'🏷️');}
+function catRowHTML(type,name){
+  const u=catUsage(type,name);const q=name.replace(/'/g,"\\'");
+  const lim=type==='despesa'?state.limits[name]:null;
+  let limitHTML='';
+  if(type==='despesa'&&HAS_V13){
+    if(lim){const sp=sumV(txByKey(keyOf(CUR_YEAR,CUR_MONTH),'despesa').filter(t=>t.tag===name));const p=sp/lim*100;
+      limitHTML=`<div class="nx-cat-limit"><div class="nx-cat-limit-top"><span>${fmt(sp)} <small>de ${fmt(lim)} em ${MONTHS_S[CUR_MONTH].toLowerCase()}</small></span><b class="${budgetTone(p)}">${Math.floor(p)}%</b></div><div class="nx-bar-track" style="height:6px"><div class="nx-bar-fill ${budgetTone(p)}" style="width:${Math.min(100,p)}%"></div></div></div>`;}
+    else limitHTML=`<button class="nx-cat-addlimit" onclick="event.stopPropagation();openCatEditor('${type}','${q}',true)">+ definir limite mensal</button>`;
+  }
+  const[bg]=TAG_CLR[name]||['#efe7da'];
+  return`<div class="nx-cat-row" onclick="openCatEditor('${type}','${q}')">
+    <div class="nx-cat-ico" style="background:${bg}">${catIcon(type,name)}</div>
+    <div class="nx-cat-main"><div class="nx-cat-name">${escHTML(name)}</div>
+      <div class="nx-cat-sub">${u.n?`${u.n} lançamento${u.n>1?'s':''} em ${APP_YEAR} · ${fmt(u.v)}`:`sem lançamentos em ${APP_YEAR}`}</div>${limitHTML}</div>
+    <div class="nx-cat-actions">
+      <button title="Editar" onclick="event.stopPropagation();openCatEditor('${type}','${q}')">${_editSVG}</button>
+      <button title="Excluir" class="del" onclick="event.stopPropagation();removeCat('${type}','${q}')">${_delSVG}</button>
+    </div></div>`;
+}
+function catManagerHTML(){
+  const list=state.categories[_catTab]||[];
+  return`<div class="nx-seg nx-cat-tabs">${CAT_TABS.map(([k,l])=>`<button type="button" class="${_catTab===k?'on':''}" onclick="_catTab='${k}';rerenderCats()">${l} <small>${state.categories[k].length}</small></button>`).join('')}</div>
+    <div class="nx-cat-list">${list.map(n=>catRowHTML(_catTab,n)).join('')||'<p class="nx-p" style="padding:16px">Nenhuma ainda.</p>'}
+      <button class="nx-cat-new" onclick="openCatEditor('${_catTab}',null)"><span>+</span>${_catTab==='meio'?'Novo meio de pagamento':'Nova categoria'}</button></div>`;
+}
+function rerenderCats(){if(IS_MOBILE){if(document.getElementById('mcat-root'))mShowCategorias();}else renderCategorias();}
+let _catEd=null;
+function openCatEditor(type,name,focusLimit){
+  const icon=name?catIcon(type,name):(type==='meio'?'💳':'🏷️');
+  _catEd={type,old:name,icon};
+  const lim=name&&type==='despesa'?state.limits[name]:0;
+  openPanel(`<div class="nx-title">${name?'Editar':'Nova'} ${type==='meio'?'forma de pagamento':'categoria'}</div>
+    <div class="nx-cat-ed-top">
+      <button type="button" class="nx-cat-ed-ico" id="ce-ico" title="Trocar emoji">${icon}</button>
+      <div style="flex:1"><div class="nx-lbl">Nome</div><input class="nx-input" id="ce-name" maxlength="40" value="${escHTML(name||'')}" placeholder="${type==='meio'?'Ex.: Nubank':'Ex.: Pets'}" onkeydown="if(event.key==='Enter')saveCatEditor()"></div>
+    </div>
+    ${HAS_ICON||!name?`<div class="nx-lbl" style="margin-top:14px">Emoji ${HAS_ICON?'':'<span class="nx-hint">· salvo após a atualização do banco</span>'}</div>
+    <div class="nx-emoji-grid">${EMOJIS.map(e=>`<button type="button" class="${e===icon?'on':''}" onclick="ceEmoji('${e}')">${e}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;"><input class="nx-input" id="ce-custom" maxlength="8" placeholder="ou cole qualquer emoji aqui" style="flex:1" oninput="if(this.value.trim())ceEmoji(this.value.trim(),true)"></div>`:''}
+    ${type==='despesa'&&HAS_V13?`<div class="nx-lbl" style="margin-top:14px">Limite mensal <span class="nx-hint">· opcional — o Numi avisa ao chegar a 80% e 100%</span></div>
+      <input class="nx-input nx-money-big" id="ce-limit" data-money inputmode="numeric" placeholder="Sem limite" value="${moneyAttr(lim)}">`:''}
+    <div style="display:flex;gap:8px;margin-top:16px;"><button class="nx-btn ghost" onclick="${IS_MOBILE?'mShowCategorias()':'closePanel()'}">Cancelar</button><button class="nx-btn primary" onclick="saveCatEditor()">Salvar</button></div>`);
+  setTimeout(()=>document.getElementById(focusLimit?'ce-limit':'ce-name')?.focus(),60);
+}
+function ceEmoji(e,fromCustom){
+  _catEd.icon=e;document.getElementById('ce-ico').textContent=e;
+  document.querySelectorAll('.nx-emoji-grid button').forEach(b=>b.classList.toggle('on',b.textContent===e));
+  if(!fromCustom){const c=document.getElementById('ce-custom');if(c)c.value='';}
+}
+function saveCatEditor(){
+  const{type,old,icon}=_catEd;const name=document.getElementById('ce-name').value.trim();
+  if(!name){toast('Dê um nome','error');return;}
+  if(name!==old&&state.categories[type].includes(name)){toast('Já existe uma com esse nome','error');return;}
+  if(!old)addCategory(type,name);
+  else if(name!==old)renameCategory(type,old,name);
+  if(icon!==catIcon(type,name)||!old)setCategoryIcon(type,name,icon);
+  const limEl=document.getElementById('ce-limit');
+  if(limEl){const v=moneyVal(limEl);if((v||0)!==(state.limits[name]||0))setCategoryLimit(name,v>0?v:0);}
+  closePanel();if(IS_MOBILE)mShowCategorias();rerender();
+  toast(old?'Atualizado!':'Adicionado!','success');
+}
+function removeCat(type,name){
+  const u=catUsage(type,name);
+  choose(`Excluir “${escHTML(name)}”?`,u.n?`Os ${u.n} lançamentos de ${APP_YEAR} continuam com esse nome; ela só sai das opções de escolha.`:'',
+    [{label:'Excluir',danger:true,fn:()=>{deleteCategory(type,name);if(IS_MOBILE)mShowCategorias();else renderCategorias();rerender();toast('Excluída','success');}}]);
+}
+function setCategoryIcon(type,name,icon){
+  TAG_ICON[name]=icon;
+  const row=_catRows.find(x=>x.type===type&&x.name===name);if(!row||!HAS_ICON)return;
+  row.icon=icon;dbOp({t:'categories',k:'update',id:row.id,row:{icon}});
+}
+// renomear atualiza a categoria, os lançamentos e as recorrentes que usam o nome antigo
+function renameCategory(type,old,name){
+  const row=_catRows.find(x=>x.type===type&&x.name===old);if(!row)return;
+  row.name=name;
+  state.categories[type]=state.categories[type].map(c=>c===old?name:c).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  if(TAG_ICON[old]&&!TAG_ICON[name])TAG_ICON[name]=TAG_ICON[old];
+  if(TAG_CLR[old]&&!TAG_CLR[name])TAG_CLR[name]=TAG_CLR[old];
+  if(state.limits[old]){state.limits[name]=state.limits[old];delete state.limits[old];}
+  const f=type==='meio'?'meio':'tag';
+  TX_ALL.forEach(t=>{if(t[f]===old&&(type==='meio'||t.kind===type))t[f]=name;});
+  state.recorrentes.forEach(r=>{if(r[f]===old&&(type==='meio'||r.type===type))r[f]=name;});
+  applyYear();
+  dbOp({t:'categories',k:'update',id:row.id,row:{name}});
+  const m={user_id:USER.id,[f]:old};if(type!=='meio')m.kind=type;
+  dbOp({t:'transactions',k:'updateWhere',match:m,row:{[f]:name}});
+  dbOp({t:'recurrents',k:'updateWhere',match:m,row:{[f]:name}});
+}
+
+// ---------- MESES (desktop) ----------
+function renderMonths(){
+  document.getElementById('meses-subtitle').textContent=`${APP_YEAR} mês a mês — clique num mês para ver os detalhes`;
+  const T=MONTHS.map((_,i)=>getMT(i));
+  const nowK=keyOf(CUR_YEAR,CUR_MONTH);
+  const act=T.map((t,i)=>({...t,i})).filter(t=>t.receita>0||t.despesa>0);
+  const maxV=Math.max(1,...T.map(t=>Math.max(t.receita,t.despesa)));
+  const best=[...act].sort((a,b)=>b.saldo-a.saldo)[0],worst=[...act].sort((a,b)=>a.saldo-b.saldo)[0];
+  const avg=act.length?act.reduce((s,t)=>s+t.saldo,0)/act.length:0;
+  const pos=act.filter(t=>t.saldo>=0).length;
+  const kpi=(l,v,sub,cls='')=>`<div class="nx-kpi"><div class="nx-kpi-l">${l}</div><div class="nx-kpi-v ${cls}">${v}</div>${sub?`<div class="nx-delta">${sub}</div>`:''}</div>`;
+  document.getElementById('months-grid').innerHTML=`
+    ${act.length?`<div class="nx-kpis">
+      ${kpi('Melhor mês',MONTHS[best.i],fmt(best.saldo)+' guardados','pos')}
+      ${kpi('Mês mais apertado',MONTHS[worst.i],(worst.saldo>=0?fmt(worst.saldo)+' guardados':fmt(-worst.saldo)+' no vermelho'),worst.saldo<0?'neg':'')}
+      ${kpi('Média guardada',fmt(avg),'por mês com lançamentos',avg>=0?'pos':'neg')}
+      ${kpi('Meses no azul',`${pos} de ${act.length}`,'')}
+    </div>`:''}
+    <div class="nx-month-grid">${MONTHS.map((name,i)=>{
+      const t=T[i],has=t.receita>0||t.despesa>0,k=keyOf(APP_YEAR,i);
+      const isNow=k===nowK,future=k>nowK;
+      if(!has)return`<div class="nx-month empty${future?' future':''}"><div class="nx-month-head"><span class="nx-month-name">${name}</span>${isNow?'<span class="nx-month-badge now">atual</span>':''}</div><div class="nx-month-emptytxt">${future?'ainda não chegou':'sem lançamentos'}</div></div>`;
+      const cats={};state.despesas.filter(d=>d.month===i).forEach(d=>cats[d.tag]=(cats[d.tag]||0)+d.value);
+      const top=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+      const rate=t.receita>0?Math.round(t.saldo/t.receita*100):null;
+      return`<div class="nx-month${isNow?' now':''}" onclick="openMonthModal(${i})">
+        <div class="nx-month-head"><span class="nx-month-name">${name}</span>${isNow?'<span class="nx-month-badge now">atual</span>':`<span class="nx-month-badge ${t.saldo>=0?'pos':'neg'}">${t.saldo>=0?'no azul':'no vermelho'}</span>`}</div>
+        <div class="nx-month-saldo ${t.saldo>=0?'pos':'neg'}">${fmt(t.saldo)}</div>
+        <div class="nx-month-bars">
+          <div><span>Receitas</span><div class="nx-bar-track"><div class="nx-bar-fill" style="width:${(t.receita/maxV*100).toFixed(1)}%;background:var(--green)"></div></div><b>${fmt(t.receita)}</b></div>
+          <div><span>Despesas</span><div class="nx-bar-track"><div class="nx-bar-fill" style="width:${(t.despesa/maxV*100).toFixed(1)}%;background:#c4624f"></div></div><b>${fmt(t.despesa)}</b></div>
+        </div>
+        <div class="nx-month-foot"><span>${rate!==null?`Poupança <b>${rate}%</b>`:''}</span>${top?`<span>${TAG_ICON[top[0]]||''} ${escHTML(top[0])} <b>${fmtK(top[1])}</b></span>`:''}</div>
+      </div>`;}).join('')}</div>`;
+}
+</script>
+
+<!-- ============================================================ -->
 <!--  DESKTOP JAVASCRIPT                                          -->
 <!-- ============================================================ -->
 <script>
@@ -1563,19 +1880,6 @@ function renderActivePage(){
 
 let dCharts={};
 // ---- MONTHS ----
-function renderMonths(){
-  document.getElementById('meses-subtitle').textContent=`resumo mensal ${APP_YEAR} — clique num mês para ver detalhes`;
-  document.getElementById('months-grid').innerHTML=MONTHS.map((m,i)=>{
-    const t=getMT(i),has=t.receita>0||t.despesa>0;
-    const dot=!has?'':t.saldo>0?'green':t.saldo<0?'red':'amber';
-    return`<div class="month-card" ${has?`onclick="openMonthModal(${i})"`:'style="cursor:default;opacity:.6;"'}><div class="month-name"><div class="month-dot ${dot}"></div>${m}</div>
-      <div class="month-row"><span>Receita</span><span>${has?fmt(t.receita):'—'}</span></div>
-      <div class="month-row"><span>Despesa</span><span>${has?fmt(t.despesa):'—'}</span></div>
-      <div class="month-row saldo"><span>Saldo</span><span class="${t.saldo>=0?'pos':'neg'}">${has?fmt(t.saldo):'—'}</span></div>
-    </div>`;
-  }).join('');
-}
-
 // detalhe do mês no desktop (mesmo conteúdo do sheet mobile)
 function openMonthModal(monthIdx){
   const t=getMT(monthIdx);
@@ -1711,11 +2015,12 @@ function openAddModal(type,pre=null,editId=null){
   }else{
     document.getElementById('tx-name').value='';document.getElementById('tx-value').value='';document.getElementById('tx-date').value='';
   }
+  refreshInputs(document.getElementById('modal-add'));
   document.getElementById('modal-add').classList.add('open');
 }
 function saveTransaction(){
   const name=document.getElementById('tx-name').value.trim();
-  const value=parseFloat(document.getElementById('tx-value').value);
+  const value=moneyVal('tx-value');
   const month=parseInt(document.getElementById('tx-month').value);
   const tag=document.getElementById('tx-tag').value;
   const meio=document.getElementById('tx-meio').value;
@@ -1760,7 +2065,7 @@ function applyAC(id){
   const tag=document.getElementById('tx-tag');if([...tag.options].some(o=>o.value===r.tag))tag.value=r.tag;
   if(r.meio)document.getElementById('tx-meio').value=r.meio;
   if(r.day){document.getElementById('tx-date').value=recDateFor(r,APP_YEAR,parseInt(document.getElementById('tx-month').value));}
-  hideAutocomplete();instUI('tx');
+  hideAutocomplete();refreshInputs(document.getElementById('modal-add'));instUI('tx');
   document.getElementById('tx-value').focus();
 }
 function hideAutocomplete(){document.getElementById('autocomplete-list').style.display='none';_acItems=[];}
@@ -1795,13 +2100,14 @@ function openRecorrenteModal(id=null){
   if(r){document.getElementById('rec-tag').value=r.tag;if(r.meio)document.getElementById('rec-meio').value=r.meio;}
   document.getElementById('rec-day').value=r?.day||'';
   document.getElementById('rec-day-row').style.display=HAS_V13?'':'none';
+  refreshInputs(document.getElementById('modal-recorrente'));
   document.getElementById('modal-recorrente').classList.add('open');
 }
 function updateRecorrenteForm(){const t=document.getElementById('rec-type').value;const cats=t==='receita'?state.categories.receita:state.categories.despesa;document.getElementById('rec-tag').innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');document.getElementById('rec-meio-row').style.display=t==='despesa'?'':'none';document.getElementById('rec-meio').innerHTML=state.categories.meio.map(m=>`<option value="${m}">${m}</option>`).join('');}
 function saveRecorrente(){
   const type=document.getElementById('rec-type').value;
   const name=document.getElementById('rec-name').value.trim();
-  const value=parseFloat(document.getElementById('rec-value').value)||0;
+  const value=moneyVal('rec-value')||0;
   const tag=document.getElementById('rec-tag').value;
   const meio=document.getElementById('rec-meio').value;
   const dv=parseInt(document.getElementById('rec-day').value);const day=dv>=1&&dv<=31?dv:null;
@@ -1922,15 +2228,12 @@ function renderRecorrentes(){
 
 // ---- CATEGORIAS + LIMITES (desktop) ----
 function renderCategorias(){
-  const secs=[{k:'despesa',t:'Categorias de despesa'},{k:'receita',t:'Categorias de receita'},{k:'meio',t:'Meios de pagamento'}];
-  document.getElementById('cat-grid').innerHTML=secs.map(s=>`<div class="cat-card">
-    <div class="cat-card-header"><div class="cat-card-title">${s.t}</div>${s.k==='despesa'&&HAS_V13?'<span class="nx-hint">limite mensal (opcional)</span>':''}</div>
-    <div class="cat-items">${state.categories[s.k].map(item=>{const q=item.replace(/'/g,"\\'");return`<div class="cat-item"><span class="cat-item-name">${TAG_ICON[item]||''} ${escHTML(item)}</span>
-      <span style="display:flex;align-items:center;gap:6px;">${s.k==='despesa'&&HAS_V13?`<input class="nx-limit-in" type="number" min="0" step="10" placeholder="sem limite" value="${state.limits[item]||''}" onchange="setCategoryLimit('${q}',parseFloat(this.value)||0);toast(this.value>0?'Limite salvo':'Limite removido','success')">`:''}
-      <button class="cat-del" onclick="delCat('${s.k}','${q}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></span></div>`;}).join('')}</div>
-    <div class="cat-add"><input id="ci-${s.k}" placeholder="Nova opção..." onkeydown="if(event.key==='Enter')addCat('${s.k}')"><button onclick="addCat('${s.k}')">+ add</button></div>
-    ${s.k==='despesa'&&!HAS_V13?'<p class="nx-p" style="margin-top:10px;font-size:12px;">Limites mensais ficam disponíveis após a atualização do banco (1.3).</p>':''}
-  </div>`).join('');
+  const side=_catTab==='despesa'
+    ?(HAS_V13?budgetCardHTML():'')+`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Como funcionam os limites</div></div><p class="nx-p">Defina um teto mensal para as categorias que quer controlar. Ao lançar uma despesa, o Numi avisa quando ela passa de 80% e de 100% do limite, e a Análise mostra a marca do limite em cada barra.</p></div>`
+    :_catTab==='receita'
+    ?`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Receitas em ${APP_YEAR}</div></div>${barsHTML(toRows(groupBy(state.receitas,'tag')),{palette:BAR_G})}</div>`
+    :`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Despesas por meio em ${APP_YEAR}</div></div>${barsHTML(toRows(groupBy(state.despesas,'meio')),{palette:BAR_N})}</div>`;
+  document.getElementById('cat-grid').innerHTML=`<div class="nx-cat-layout"><div class="nx-card" style="padding:18px">${catManagerHTML()}</div><div class="nx-cat-side">${side}</div></div>`;
 }
 
 // ---- USER MENU (sidebar) ----
@@ -2464,8 +2767,8 @@ function mOpenSheet(type, recId, editId){
         <button class="m-toggle-btn" id="mst-desp" onclick="mSheetType='despesa';mUpdateSheet()" style="background:${mSheetType==='despesa'?'#fffefb':'none'};color:${mSheetType==='despesa'?'#b54d3a':'#9a8e7e'};">↓ Despesa</button>
       </div>`}
       <div style="margin-bottom:11px;">${mSheetLabel('Nome')}<input id="ms-name" class="m-input" placeholder="${editTx?'Ex: Spotify':'Digite para buscar nas recorrentes'}" autocomplete="off" oninput="mAC(this.value)" value="${(pre?pre.name:'').replace(/"/g,'&quot;')}"><div id="ms-ac"></div></div>
-      <div style="margin-bottom:11px;">${mSheetLabel('Valor (R$)')}<input id="ms-val" type="number" class="m-input" placeholder="0,00" oninput="instUI('ms')" value=""${pre&&pre.value>0?pre.value:''}"></div>
-      <div style="margin-bottom:11px;">${mSheetLabel('Data (opcional)')}<input id="ms-date" type="date" class="m-input" value="${editTx?(editTx.date||''):(pre&&pre.day?recDateFor(pre,APP_YEAR,selMonth):'')}" onchange="syncMonthFromDate('ms-date','ms-month');instUI('ms')"></div>
+      <div style="margin-bottom:11px;">${mSheetLabel('Valor (R$)')}<input id="ms-val" class="m-input" data-money inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" oninput="instUI('ms')" value="${pre&&pre.value>0?moneyStr(pre.value):''}"></div>
+      <div style="margin-bottom:11px;">${mSheetLabel('Data')}${dateFieldHTML('ms-date',editTx?(editTx.date||''):(pre&&pre.day?recDateFor(pre,APP_YEAR,selMonth):''),"syncMonthFromDate('ms-date','ms-month');instUI('ms')",'m')}</div>
       <div style="margin-bottom:11px;">${mSheetLabel('Mês · '+(editTx?editTx.year:APP_YEAR))}<select id="ms-month" class="m-input" onchange="instUI('ms')">${MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('')}</select></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Tag')}<select id="ms-tag" class="m-input">${cats.map(c=>`<option value="${c}"${pre&&pre.tag===c?' selected':''}>${TAG_ICON[c]||''} ${c}</option>`).join('')}</select></div>
       <div id="ms-meio-row" style="margin-bottom:11px;${mSheetType==='despesa'?'':'display:none'}">${mSheetLabel('Meio')}<select id="ms-meio" class="m-input">${state.categories.meio.map(m=>`<option value="${m}"${pre&&pre.meio===m?' selected':''}>${m}</option>`).join('')}</select></div>
@@ -2476,6 +2779,7 @@ function mOpenSheet(type, recId, editId){
         <button onclick="mSaveTx()" style="${MBTN_P}">Salvar</button>
       </div>
     </div>`);
+  refreshInputs(document.getElementById('m-sheet-container'));
 }
 
 // ---- AUTOCOMPLETE DE RECORRENTES (mobile): sugere enquanto digita, de qualquer tipo ----
@@ -2501,11 +2805,11 @@ function mApplyRec(id){
   const r=state.recorrentes.find(x=>x.id===id);if(!r)return;
   if(document.getElementById('mst-rec')){mSheetType=r.type;mUpdateSheet();}
   document.getElementById('ms-name').value=r.name;
-  if(r.value>0)document.getElementById('ms-val').value=r.value;
+  if(r.value>0)document.getElementById('ms-val').value=moneyStr(r.value);
   const tag=document.getElementById('ms-tag');if([...tag.options].some(o=>o.value===r.tag))tag.value=r.tag;
   const meio=document.getElementById('ms-meio');if(r.meio&&meio&&[...meio.options].some(o=>o.value===r.meio))meio.value=r.meio;
   if(r.day)document.getElementById('ms-date').value=recDateFor(r,APP_YEAR,parseInt(document.getElementById('ms-month').value));
-  instUI('ms');
+  refreshInputs(document.getElementById('m-sheet-container'));instUI('ms');
   document.getElementById('ms-ac').innerHTML='';
   if(!(r.value>0))document.getElementById('ms-val').focus();
 }
@@ -2525,7 +2829,7 @@ function mUpdateSheet(){
 
 function mSaveTx(){
   const name=(document.getElementById('ms-name').value||'').trim();
-  const value=parseFloat(document.getElementById('ms-val').value);
+  const value=moneyVal('ms-val');
   const month=parseInt(document.getElementById('ms-month').value);
   const tag=document.getElementById('ms-tag').value;
   const meio=document.getElementById('ms-meio')?.value||'';
@@ -2570,7 +2874,7 @@ function mShowConfig(){
     <div style="padding:0 0 8px;">
       <div style="${MTITLE}">Configurações</div>
       <button class="m-menu-item" onclick="mShowRecorrentes()"><span>🔁&nbsp; Recorrentes</span><span style="color:#cdc4b2;">›</span></button>
-      <button class="m-menu-item" onclick="mShowCategorias()"><span>🏷️&nbsp; Categorias</span><span style="color:#cdc4b2;">›</span></button>
+      <button class="m-menu-item" onclick="mShowCategorias()"><span>🏷️&nbsp; Categorias e limites</span><span style="color:#cdc4b2;">›</span></button>
       <button class="m-menu-item" onclick="mEditMeta()"><span>🎯&nbsp; Meta e data de início</span><span style="color:#cdc4b2;">›</span></button>
       <button class="m-menu-item" onclick="openImport()"><span>📥&nbsp; Importar planilha (.xlsx)</span><span style="color:#cdc4b2;">›</span></button>
       <button class="m-menu-item" onclick="exportXLSX()"><span>📤&nbsp; Exportar planilha (.xlsx)</span><span style="color:#cdc4b2;">›</span></button>
@@ -2624,7 +2928,7 @@ function mRecForm(id){
         <option value="despesa"${type==='despesa'?' selected':''}>Despesa</option>
       </select></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Nome')}<input id="mr-name" class="m-input" placeholder="Ex: Spotify" value="${(r?r.name:'').replace(/"/g,'&quot;')}"></div>
-      <div style="margin-bottom:11px;">${mSheetLabel('Valor (R$) — deixe 0 para variável')}<input id="mr-value" type="number" class="m-input" placeholder="0,00" value="${r&&r.value>0?r.value:''}"></div>
+      <div style="margin-bottom:11px;">${mSheetLabel('Valor (R$) — deixe 0 para variável')}<input id="mr-value" class="m-input" data-money inputmode="numeric" autocomplete="off" placeholder="R$ 0,00 (variável)" value="${r&&r.value>0?moneyStr(r.value):''}"></div>
       <div style="margin-bottom:11px;${HAS_V13?'':'display:none'}">${mSheetLabel('Dia do mês (opcional)')}<input id="mr-day" type="number" min="1" max="31" class="m-input" placeholder="sem dia fixo" value="${r?.day||''}"></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Tag')}<select id="mr-tag" class="m-input">${cats.map(c=>`<option value="${c}"${r&&r.tag===c?' selected':''}>${TAG_ICON[c]||''} ${c}</option>`).join('')}</select></div>
       <div id="mr-meio-row" style="margin-bottom:11px;${type==='despesa'?'':'display:none'}">${mSheetLabel('Meio')}<select id="mr-meio" class="m-input">${state.categories.meio.map(m=>`<option value="${m}"${r&&r.meio===m?' selected':''}>${m}</option>`).join('')}</select></div>
@@ -2643,7 +2947,7 @@ function mRecTypeChanged(){
 function mSaveRec(id){
   const type=document.getElementById('mr-type').value;
   const name=document.getElementById('mr-name').value.trim();
-  const value=parseFloat(document.getElementById('mr-value').value)||0;
+  const value=moneyVal('mr-value')||0;
   const tag=document.getElementById('mr-tag').value;
   const meio=document.getElementById('mr-meio').value;
   const dv=parseInt(document.getElementById('mr-day')?.value);const day=dv>=1&&dv<=31?dv:null;
@@ -2658,24 +2962,8 @@ function mDelRec(id){removeRec(id);}
 
 // ---- CATEGORIAS (gerenciar no mobile) ----
 function mShowCategorias(){
-  const secs=[{k:'receita',t:'Tags de Receita'},{k:'despesa',t:'Tags de Despesa'},{k:'meio',t:'Meios de Pagamento'}];
-  mSheet(`
-    <div style="padding:0 0 8px;">
-      <div style="${MTITLE}">Categorias</div>
-      ${secs.map(s=>`
-        <div style="font-size:10px;color:#9a8e7e;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:12px 0 6px;">${s.t}${s.k==='despesa'&&HAS_V13?' <span style="text-transform:none;letter-spacing:0;font-weight:500;">· limite mensal opcional</span>':''}</div>
-        ${state.categories[s.k].map(item=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#faf6f0;border:1px solid #ddd5c5;border-radius:10px;margin-bottom:5px;">
-            <span style="font-size:12px;color:#2a2218;flex:1;min-width:0;">${TAG_ICON[item]||''} ${item}</span>
-            ${s.k==='despesa'&&HAS_V13?`<input class="nx-limit-in" style="width:96px;margin-right:4px;" type="number" min="0" step="10" placeholder="sem limite" value="${state.limits[item]||''}" onchange="setCategoryLimit('${item.replace(/'/g,"\\'")}',parseFloat(this.value)||0);toast(this.value>0?'Limite salvo':'Limite removido','success')">`:''}
-            <button onclick="mDelCat('${s.k}','${item.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#b54d3a;cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;">×</button>
-          </div>`).join('')}
-        <div style="display:flex;gap:6px;margin-bottom:4px;">
-          <input id="mci-${s.k}" class="m-input" placeholder="Nova opção..." style="flex:1;" onkeydown="if(event.key==='Enter')mAddCat('${s.k}')">
-          <button onclick="mAddCat('${s.k}')" style="padding:0 16px;border-radius:11px;border:1px solid #1b854f;background:#e0f2e9;color:#115c32;font-weight:700;cursor:pointer;font-size:16px;">+</button>
-        </div>`).join('')}
-      <button onclick="mShowConfig()" style="width:100%;margin-top:12px;${MBTN_G}">← Voltar</button>
-    </div>`);
+  mSheet(`<div style="padding:0 0 8px;" id="mcat-root"><div style="${MTITLE}">Categorias e limites</div>${catManagerHTML()}
+    <button onclick="mShowConfig()" style="width:100%;margin-top:12px;${MBTN_G}">← Voltar</button></div>`);
 }
 function mAddCat(k){
   const i=document.getElementById('mci-'+k);const v=i.value.trim();

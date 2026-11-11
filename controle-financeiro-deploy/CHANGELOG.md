@@ -1,5 +1,13 @@
 # Changelog — Numi
 
+## [1.4.0] — categorias, meses, valor e calendário
+- Categorias e limites redesenhados: abas, cards com emoji e uso no ano, barra de limite do mês e painel lateral
+- Escolher emoji ao criar categoria; editar nome, emoji e limite das existentes (renomear atualiza lançamentos e recorrentes)
+- Meses redesenhado: resumo do ano (melhor mês, mais apertado, média, meses no azul) e cards maiores com barras de receita × despesa
+- Campo de valor estilo Nubank: digite só os números e a vírgula se ajusta sozinha
+- Calendário próprio no lugar do seletor de data do navegador, com atalhos Hoje / Ontem / Sem data
+- Correção: no mobile, editar um lançamento ou lançar a partir de uma recorrente abria com o valor vazio
+
 ## [1.3.0] — nova identidade, análise com filtros e planejamento
 - Desktop redesenhado: barra lateral verde-escura, superfícies com profundidade, tipografia maior
 - Nova tela de Início (desktop): saudação, resumo do mês, destaques automáticos, recorrentes, meta, limites e saúde financeira
