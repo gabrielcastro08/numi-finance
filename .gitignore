@@ -13,3 +13,6 @@ node_modules/
 
 # Netlify CLI
 .netlify/
+
+# Backup local da versao antiga (fica fora do repositorio)
+backup/

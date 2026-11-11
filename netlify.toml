@@ -1,0 +1,3 @@
+[build]
+  # Site estatico, sem etapa de build: publica a pasta do app.
+  publish = "controle-financeiro-deploy"

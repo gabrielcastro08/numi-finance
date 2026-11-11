@@ -1,12 +1,12 @@
-# Checklist de deploy — Controle Financeiro multi-usuário
+# Checklist de deploy — Numi
 
 ## 1. Configurar URLs de autenticação no Supabase (fazer 1x, antes do deploy)
 
 No painel do Supabase → **Authentication → URL Configuration**:
 
-- **Site URL**: `https://controle-financeiro-gabriel.netlify.app`
+- **Site URL**: `https://numi-finance.netlify.app`
 - **Redirect URLs** (adicionar as duas):
-  - `https://controle-financeiro-gabriel.netlify.app`
+  - `https://numi-finance.netlify.app`
   - `http://localhost:3000`
 
 Sem isso, os links de confirmação de email e de "esqueci minha senha" não voltam para o app.
@@ -16,8 +16,7 @@ Sem isso, os links de confirmação de email e de "esqueci minha senha" não vol
 `file://` não funciona com Supabase — sirva por HTTP:
 
 ```
-cd controle-financeiro
-npx serve -l 3000 .
+npx serve -l 3000 controle-financeiro-deploy
 ```
 
 Abra `http://localhost:3000` e verifique:
@@ -29,10 +28,11 @@ Abra `http://localhost:3000` e verifique:
 
 ## 3. Subir no Netlify
 
-Drag-and-drop da pasta no painel do Netlify, como sempre. Arquivos necessários:
-`index.html`, `sw.js`, `manifest.json`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`.
+O deploy é contínuo: o site no Netlify está ligado a este repositório e cada `git push`
+na branch `main` publica uma nova versão. A pasta publicada é `controle-financeiro-deploy/`
+(definida em `netlify.toml`); não há etapa de build.
 
-(As pastas `supabase/`, `backup/` e o `DEPLOY.md` podem ir junto sem problema — são estáticos e ninguém acessa — mas se preferir, arraste só os 6 arquivos acima.)
+Para voltar a uma versão anterior: Netlify → **Deploys** → escolher o deploy → *Publish deploy*.
 
 ## 4. Testar no desktop (produção)
 
@@ -50,7 +50,7 @@ mas o app instalado ainda roda o SW antigo (v1, cache-first). Para garantir:
    menu ⋮ → *Configurações do site* → **Limpar dados** → recarregue → menu ⋮ → *Instalar app*.
 3. Faça login (a sessão fica salva; não pede login toda vez).
 
-- [ ] "Olá, Gabriel! 👋" no topo; avatar abre o menu.
+- [ ] "Olá, {nome}! 👋" no topo; avatar abre o menu.
 - [ ] Lançar despesa no celular e ver no desktop segundos depois (e vice-versa), com os dois abertos.
 - [ ] Nova transação no mobile tem campo de Data (mês é derivado automaticamente).
 - [ ] Recorrentes e Categorias em Configurações (mobile).
@@ -64,6 +64,6 @@ mas o app instalado ainda roda o SW antigo (v1, cache-first). Para garantir:
 
 ## Manutenção
 
-- A cada nova versão publicada, **incrementar** `finctrl-vN` no topo do `sw.js` — o app instalado se atualiza sozinho no próximo uso.
+- A cada nova versão publicada, **incrementar** `numi-vN` no topo do `sw.js` — o app instalado se atualiza sozinho no próximo uso.
 - A tabela `app_state` segue no Supabase como backup dos dados antigos; o app não a usa mais. Quando quiser, pode apagá-la (recomendo esperar algumas semanas).
-- Backup do app antigo em `backup/index-v1-app_state.html`.
+- A versão antiga (single-user, `app_state`) está no histórico do Git, no commit inicial.
