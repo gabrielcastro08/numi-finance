@@ -1,5 +1,13 @@
 # Changelog — Numi
 
+## [1.5.0] — local/destinatário, tooltips e mês atual
+- Campo opcional de local da compra (ou destinatário, no Pix) nas despesas, com sugestões do histórico
+- Análise: novo card "Onde você mais gasta"; exportação inclui a coluna Local/Destinatário
+- Tooltips dos gráficos no visual do app
+- A tela inicial mostra sempre o mês atual; parcelas futuras não entram em meta, score e economia acumulada
+- Meses: mês futuro com parcelas aparece como "previsto"
+- Removida a logo transparente do painel do Início
+
 ## [1.4.0] — categorias, meses, valor e calendário
 - Categorias e limites redesenhados: abas, cards com emoji e uso no ano, barra de limite do mês e painel lateral
 - Escolher emoji ao criar categoria; editar nome, emoji e limite das existentes (renomear atualiza lançamentos e recorrentes)

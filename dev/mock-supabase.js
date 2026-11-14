@@ -7,6 +7,8 @@
   const V13=!/[?&]v12(&|$)/.test(location.search);
   // ?noicon simula o banco sem a coluna de emoji (1.4)
   const ICON=V13&&!/[?&]noicon(&|$)/.test(location.search);
+  // ?noplace simula o banco sem a coluna de local (1.5)
+  const PLACE=V13&&!/[?&]noplace(&|$)/.test(location.search);
   const db={profiles:[],transactions:[],recurrents:[],categories:[]};
   db.profiles.push({id:UID,name:'Ana Teste',birth_date:null,avatar_url:null,start_date:Y+'-01-01',goal:15000});
   const cats={receita:['Salário','Bônus','Investimento','Atividade complementar','Presente'],
@@ -26,7 +28,7 @@
   // ano anterior inteiro (para o seletor de ano / visão geral) + ano atual até o mês corrente
   for(const[YY,LM,F]of[[Y-1,11,.85],[Y,lastM,1]])for(let m=0;m<=LM;m++){
     const d=dd=>`${YY}-${String(m+1).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-    const tx=(k,n,v,t,me,day)=>db.transactions.push({id:id(),user_id:UID,kind:k,name:n,value:Math.round(v*(k==='receita'?F:1)*100)/100,tag:t,meio:me||null,date:d(day),month:m,year:YY,created_at:new Date().toISOString(),...(V13?{installment_group:null,installment_no:null,installment_total:null}:{})});
+    const tx=(k,n,v,t,me,day)=>db.transactions.push({id:id(),user_id:UID,kind:k,name:n,value:Math.round(v*(k==='receita'?F:1)*100)/100,tag:t,meio:me||null,date:d(day),month:m,year:YY,created_at:new Date().toISOString(),...(PLACE?{place:k==='despesa'?({Mercado:m%2?'Carrefour':'Pão de Açúcar',iFood:'iFood',Uber:'Uber',Aluguel:'Imobiliária Lar',Cinema:'Cinemark',Roupas:'Renner',Farmácia:'Drogasil'}[n]||null):null}:{}),...(V13?{installment_group:null,installment_no:null,installment_total:null}:{})});
     tx('receita','Salário',6500,'Salário','',5);
     if(m%2===0)tx('receita','Aulas de violão',600,'Atividade complementar','',10);
     if(m===5)tx('receita','Bônus semestral',2500,'Bônus','',20);
@@ -61,6 +63,7 @@
     };
     function run(){
       const T=db[table];const match=r=>filters.every(f=>f(r));
+      if(!PLACE&&payload&&op!=='select'&&(Array.isArray(payload)?payload:[payload]).some(r=>'place' in r))return{data:null,error:{message:"Could not find the 'place' column",code:'PGRST204'},status:400};
       if(!ICON&&payload&&op!=='select'&&(Array.isArray(payload)?payload:[payload]).some(r=>'icon' in r))return{data:null,error:{message:"Could not find the 'icon' column",code:'PGRST204'},status:400};
       if(!V13&&payload&&op!=='select'){const bad=['day','monthly_limit','installment_group','installment_no','installment_total'];
         const rows=Array.isArray(payload)?payload:[payload];const col=rows.flatMap(Object.keys).find(k=>bad.includes(k));

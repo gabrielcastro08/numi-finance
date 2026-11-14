@@ -294,7 +294,6 @@ body{font-variant-numeric:tabular-nums;}
 .hx-hero{position:relative;overflow:hidden;border-radius:28px;padding:32px 36px;color:#fff;margin-bottom:18px;
   background:radial-gradient(120% 140% at 100% 0%,#27a768 0%,#1b854f 32%,#115c32 72%,#0b3a21 100%);
   display:grid;grid-template-columns:1.35fr 1fr;gap:30px;box-shadow:0 22px 50px rgba(17,92,50,.28);}
-.hx-hero::after{content:'';position:absolute;right:-40px;bottom:-56px;width:380px;height:230px;background:url(assets/logo-light-trim.png) no-repeat center/contain;opacity:.07;transform:rotate(-9deg);pointer-events:none;}
 .hx-hero>*{position:relative;z-index:1;}
 .hx-date{font-size:12px;opacity:.78;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;}
 .hx-greet{font-family:var(--font-display);font-style:italic;font-size:36px;font-weight:600;margin:4px 0 12px;letter-spacing:-.5px;}
@@ -538,6 +537,18 @@ input[data-money]::placeholder{color:var(--text3);font-weight:600;}
 .nx-month-foot{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text3);border-top:1px solid var(--bg2);padding-top:10px;}
 .nx-month-foot b{color:var(--text);}
 </style>
+<style id="nx-styles-15">
+.nx-tip{position:absolute;pointer-events:none;z-index:6;opacity:0;min-width:180px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px rgba(42,34,24,.18);padding:10px 12px 8px;font-family:var(--font-main);transition:opacity .12s,left .1s ease,top .1s ease;}
+.nx-tip-title{font-family:var(--font-display);font-style:italic;font-weight:600;font-size:14px;color:var(--text);margin-bottom:6px;}
+.nx-tip-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;}
+.nx-tip-row i{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.nx-tip-row span{flex:1;color:var(--text2);}
+.nx-tip-row b{color:var(--text);font-weight:700;white-space:nowrap;}
+.nx-tip-row b small{color:var(--text3);font-weight:600;margin-left:3px;}
+.nx-tip-row.total{border-top:1px solid var(--bg3);margin-top:4px;padding-top:7px;}
+.nx-month.planned{border-style:dashed;background:rgba(255,254,251,.6);}
+.nx-month-badge.future{background:var(--amber-dim);color:#7a5010;}
+</style>
 </head>
 <body>
 
@@ -634,6 +645,9 @@ const fmtK=v=>v>=1000?'R$ '+(v/1000).toLocaleString('pt-BR',{minimumFractionDigi
 const uuid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);}));
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const fmtDateBR=iso=>{if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;};
+// mês já aconteceu? (parcelas futuras não contam como saldo realizado)
+function isRealized(m){const y=APP_YEAR,c=new Date();return y<c.getFullYear()||(y===c.getFullYear()&&m<=c.getMonth());}
+const getMTr=m=>isRealized(m)?getMT(m):{receita:0,despesa:0,saldo:0};
 function getMT(m,st){const s=st||state;const r=s.receitas.filter(x=>x.month===m).reduce((a,x)=>a+x.value,0);const d=s.despesas.filter(x=>x.month===m).reduce((a,x)=>a+x.value,0);return{receita:r,despesa:d,saldo:r-d};}
 function initials(name){return(name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';}
 function firstName(){return(state.profile?.name||'').trim().split(/\s+/)[0]||'';}
@@ -648,7 +662,7 @@ function goalCalc(){
   const sd=new Date(sdIso+'T00:00:00');
   const startMonth=sd.getFullYear()<APP_YEAR?0:Math.min(11,sd.getMonth());
   const monthsTotal=12-startMonth;
-  const tots=MONTHS.map((_,i)=>getMT(i));
+  const tots=MONTHS.map((_,i)=>getMTr(i));
   const saved=tots.reduce((s,t)=>s+t.saldo,0);
   const am=tots.filter((t,i)=>i>=startMonth&&(t.receita>0||t.despesa>0)).length;
   const ml=Math.max(1,monthsTotal-am);
@@ -663,7 +677,7 @@ function goalCalc(){
 // TX_ALL guarda todos os anos; state.receitas/despesas são a visão do ano selecionado (APP_YEAR).
 let TX_ALL=[];
 let HAS_V13=false; // banco já tem as colunas da 1.3 (dia, limite, parcelas)?
-const _mapTx=x=>({id:x.id,kind:x.kind,name:x.name,value:Number(x.value),month:x.month,year:x.year,tag:x.tag,meio:x.meio||'',date:x.date||'',
+const _mapTx=x=>({id:x.id,kind:x.kind,name:x.name,value:Number(x.value),month:x.month,year:x.year,tag:x.tag,meio:x.meio||'',date:x.date||'',place:x.place||'',
   ig:x.installment_group||null,ino:x.installment_no||null,itot:x.installment_total||null});
 const _txSort=(a,b)=>a.year-b.year||a.month-b.month||(a.date||'').localeCompare(b.date||'');
 function applyYear(){
@@ -701,6 +715,7 @@ async function loadAll(){
   ['profiles','transactions','recurrents','categories'].forEach(k=>raw[k]=_replay(k,raw[k].map(x=>({...x}))));
   HAS_V13=!!raw.categories[0]&&('monthly_limit' in raw.categories[0]);
   HAS_ICON=!!raw.categories[0]&&('icon' in raw.categories[0]);
+  HAS_PLACE=!!raw.transactions[0]&&('place' in raw.transactions[0]);
   raw.categories.forEach(x=>{if(x.icon)TAG_ICON[x.name]=x.icon;});
   const p=raw.profiles[0]||null;
   state.profile=p;
@@ -784,11 +799,12 @@ function _replay(table,rows){
 function _txRow(t){
   const row={id:t.id,user_id:USER.id,kind:t.kind,name:t.name,value:t.value,tag:t.tag,meio:t.kind==='despesa'?(t.meio||null):null,date:t.date||null,month:t.month,year:t.year};
   if(t.ig){row.installment_group=t.ig;row.installment_no=t.ino;row.installment_total=t.itot;}
+  if(HAS_PLACE)row.place=t.kind==='despesa'&&t.place?t.place:null;
   return row;
 }
 function addTransaction(type,tx){
   const t={id:tx.id||uuid(),kind:type,name:tx.name,value:tx.value,month:tx.month,year:tx.year??yearOf(tx.date)??APP_YEAR,
-    tag:tx.tag,meio:type==='despesa'?(tx.meio||''):'',date:tx.date||'',ig:tx.ig||null,ino:tx.ino||null,itot:tx.itot||null};
+    tag:tx.tag,meio:type==='despesa'?(tx.meio||''):'',date:tx.date||'',place:type==='despesa'?(tx.place||''):'',ig:tx.ig||null,ino:tx.ino||null,itot:tx.itot||null};
   TX_ALL.push(t);applyYear();
   dbOp({t:'transactions',k:'upsert',row:_txRow(t)});
   return t;
@@ -798,7 +814,9 @@ function updateTransaction(type,id,fields){
   Object.assign(t,fields);
   if(fields.date)t.year=yearOf(fields.date);
   applyYear();
-  dbOp({t:'transactions',k:'update',id,row:{name:t.name,value:t.value,tag:t.tag,meio:t.kind==='despesa'?(t.meio||null):null,date:t.date||null,month:t.month,year:t.year}});
+  const row={name:t.name,value:t.value,tag:t.tag,meio:t.kind==='despesa'?(t.meio||null):null,date:t.date||null,month:t.month,year:t.year};
+  if(HAS_PLACE)row.place=t.kind==='despesa'&&t.place?t.place:null;
+  dbOp({t:'transactions',k:'update',id,row});
 }
 function deleteTransaction(type,id){
   const t=TX_ALL.find(x=>x.id===id);
@@ -1084,7 +1102,8 @@ function recSorted(list){
     <div class="form-row"><label class="form-label">Data</label><input type="hidden" id="tx-date" onchange="syncMonthFromDate('tx-date','tx-month');instUI('tx')"><button type="button" class="nx-date-btn empty" data-for="tx-date" id="tx-date-btn" onclick="openDatePicker('tx-date')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Sem data</span></button></div>
     <div class="form-row"><label class="form-label" id="tx-month-lbl">Mês</label><select class="form-select" id="tx-month" onchange="instUI('tx')"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select></div>
     <div class="form-row"><label class="form-label">Tag</label><select class="form-select" id="tx-tag"></select></div>
-    <div class="form-row" id="tx-meio-row"><label class="form-label">Meio</label><select class="form-select" id="tx-meio"></select></div>
+    <div class="form-row" id="tx-meio-row"><label class="form-label">Meio</label><select class="form-select" id="tx-meio" onchange="placeLabel('tx')"></select></div>
+    <div id="tx-place-slot"></div>
     <div id="tx-inst-slot"></div>
     <div class="modal-actions"><button class="btn" onclick="closeModal('modal-add')">Cancelar</button><button class="btn primary" onclick="saveTransaction()">Salvar</button></div>
   </div>
@@ -1321,7 +1340,7 @@ function addInstallments(base,n,mode,value){
   const out=[];
   for(let i=0;i<n;i++){
     const k=keyOf(base.year,base.month)+i;const y=Math.floor(k/12),m=k%12;
-    out.push(addTransaction('despesa',{name:base.name,value:(per+(i===n-1?rest:0))/100,tag:base.tag,meio:base.meio,month:m,year:y,
+    out.push(addTransaction('despesa',{name:base.name,value:(per+(i===n-1?rest:0))/100,tag:base.tag,meio:base.meio,place:base.place,month:m,year:y,
       date:day?isoOf(y,m,day):'',ig,ino:i+1,itot:n}));
   }
   return out;
@@ -1361,11 +1380,11 @@ function instRead(p){
   if(!document.getElementById(p+'-inst')?.checked)return null;
   return{n:parseInt(document.getElementById(p+'-inst-n').value)||0,mode:document.getElementById(p+'-inst-mode').dataset.v};
 }
-function saveInstallmentsFrom(p,{name,value,month,tag,meio,date}){
+function saveInstallmentsFrom(p,{name,value,month,tag,meio,date,place}){
   const inst=instRead(p);
   if(!inst)return false;
   if(inst.n<2||inst.n>72){toast('Parcelas: de 2 a 72','error');return'err';}
-  const out=addInstallments({name,tag,meio,month,year:date?yearOf(date):APP_YEAR,date},inst.n,inst.mode,value);
+  const out=addInstallments({name,tag,meio,place,month,year:date?yearOf(date):APP_YEAR,date},inst.n,inst.mode,value);
   const last=out[out.length-1];
   toast(`${inst.n} parcelas lançadas — até ${keyLabel(keyOf(last.year,last.month))}`,'success');
   checkBudgetAlert(out[0]);
@@ -1522,6 +1541,7 @@ function renderAnalysis(elId){
       ${showD?`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Despesas por categoria</div>${limits&&Object.keys(limits).length?'<span class="nx-hint">| = limite</span>':''}</div>${barsHTML(toRows(groupBy(desp,'tag')),{palette:BAR_R,prev:prevList?groupBy(prevList.filter(t=>t.kind==='despesa'),'tag'):null,goodUp:false,limits,clickable:true})}</div>`:''}
       ${showR?`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Receitas por categoria</div></div>${barsHTML(toRows(groupBy(rec,'tag')),{palette:BAR_G,prev:prevList?groupBy(prevList.filter(t=>t.kind==='receita'),'tag'):null,goodUp:true,clickable:true})}</div>`:''}
       ${showD?`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Despesas por meio de pagamento</div></div>${barsHTML(toRows(groupBy(desp,'meio')),{palette:BAR_N,prev:prevList?groupBy(prevList.filter(t=>t.kind==='despesa'),'meio'):null,goodUp:false})}</div>`:''}
+      ${showD&&HAS_PLACE&&desp.some(t=>t.place)?`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Onde você mais gasta</div><span class="nx-hint">locais e destinatários</span></div>${barsHTML(toRows(groupBy(desp.filter(t=>t.place),'place')).slice(0,8),{palette:BAR_N,prev:prevList?groupBy(prevList.filter(t=>t.kind==='despesa'&&t.place),'place'):null,goodUp:false})}</div>`:''}
       <div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Maiores lançamentos</div></div>
         ${top.length?top.map(t=>`<div class="nx-row" onclick="${IS_MOBILE?`mShowTxDetail('${t.id}','${t.kind}')`:`editTx('${t.kind}','${t.id}')`}">${tagIcon(t.tag)}<div class="nx-row-main"><div class="nx-row-name">${txLabel(t)}</div><div class="nx-row-sub">${keyLabel(t.year*12+t.month)} · ${escHTML(t.tag)}</div></div><div class="nx-row-val ${t.kind==='receita'?'pos':'neg'}">${fmt(t.value)}</div></div>`).join(''):'<p class="nx-p">Sem lançamentos no período.</p>'}</div>
       ${AF.period==='year'&&showR&&showD&&!AF.cats.length?`<div class="nx-card span2"><div class="nx-card-head"><div class="nx-card-title">Economia acumulada</div>${AF.compare?`<div class="nx-legend"><i style="background:#1b854f"></i>${APP_YEAR}<i class="dash"></i>${APP_YEAR-1}</div>`:''}</div><div class="nx-chart" style="height:${IS_MOBILE?170:220}px"><canvas id="an-acc"></canvas></div></div>`:''}
@@ -1813,7 +1833,7 @@ function renderMonths(){
   document.getElementById('meses-subtitle').textContent=`${APP_YEAR} mês a mês — clique num mês para ver os detalhes`;
   const T=MONTHS.map((_,i)=>getMT(i));
   const nowK=keyOf(CUR_YEAR,CUR_MONTH);
-  const act=T.map((t,i)=>({...t,i})).filter(t=>t.receita>0||t.despesa>0);
+  const act=T.map((t,i)=>({...t,i})).filter((t,i)=>(t.receita>0||t.despesa>0)&&isRealized(i));
   const maxV=Math.max(1,...T.map(t=>Math.max(t.receita,t.despesa)));
   const best=[...act].sort((a,b)=>b.saldo-a.saldo)[0],worst=[...act].sort((a,b)=>a.saldo-b.saldo)[0];
   const avg=act.length?act.reduce((s,t)=>s+t.saldo,0)/act.length:0;
@@ -1833,8 +1853,8 @@ function renderMonths(){
       const cats={};state.despesas.filter(d=>d.month===i).forEach(d=>cats[d.tag]=(cats[d.tag]||0)+d.value);
       const top=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
       const rate=t.receita>0?Math.round(t.saldo/t.receita*100):null;
-      return`<div class="nx-month${isNow?' now':''}" onclick="openMonthModal(${i})">
-        <div class="nx-month-head"><span class="nx-month-name">${name}</span>${isNow?'<span class="nx-month-badge now">atual</span>':`<span class="nx-month-badge ${t.saldo>=0?'pos':'neg'}">${t.saldo>=0?'no azul':'no vermelho'}</span>`}</div>
+      return`<div class="nx-month${isNow?' now':''}${future?' planned':''}" onclick="openMonthModal(${i})">
+        <div class="nx-month-head"><span class="nx-month-name">${name}</span>${isNow?'<span class="nx-month-badge now">atual</span>':future?'<span class="nx-month-badge future">previsto</span>':`<span class="nx-month-badge ${t.saldo>=0?'pos':'neg'}">${t.saldo>=0?'no azul':'no vermelho'}</span>`}</div>
         <div class="nx-month-saldo ${t.saldo>=0?'pos':'neg'}">${fmt(t.saldo)}</div>
         <div class="nx-month-bars">
           <div><span>Receitas</span><div class="nx-bar-track"><div class="nx-bar-fill" style="width:${(t.receita/maxV*100).toFixed(1)}%;background:var(--green)"></div></div><b>${fmt(t.receita)}</b></div>
@@ -1843,6 +1863,82 @@ function renderMonths(){
         <div class="nx-month-foot"><span>${rate!==null?`Poupança <b>${rate}%</b>`:''}</span>${top?`<span>${TAG_ICON[top[0]]||''} ${escHTML(top[0])} <b>${fmtK(top[1])}</b></span>`:''}</div>
       </div>`;}).join('')}</div>`;
 }
+</script>
+
+<!-- ============================================================ -->
+<!--  NUMI 1.5: local/destinatário e tooltip dos gráficos         -->
+<!-- ============================================================ -->
+<script>
+// ---------- local da compra / destinatário do Pix ----------
+let HAS_PLACE=false;
+const isPixMeio=m=>/pix/i.test(m||'');
+function placeLabel(p){
+  const meio=document.getElementById(p==='tx'?'tx-meio':'ms-meio')?.value;const pix=isPixMeio(meio);
+  const l=document.getElementById(p+'-place-lbl'),i=document.getElementById(p+'-place');
+  if(l)l.textContent=pix?'Destinatário (opcional)':'Local (opcional)';
+  if(i)i.placeholder=pix?'Para quem foi o Pix?':'Onde foi a compra?';
+}
+// último local usado em um lançamento com o mesmo nome (ex.: "Aluguel" → "Imobiliária X")
+function lastPlaceFor(name){
+  const n=normTxt(name);const l=TX_ALL.filter(t=>t.place&&normTxt(t.name)===n);
+  return l.length?l[l.length-1].place:'';
+}
+function placeOptions(q){
+  const cnt={};TX_ALL.forEach(t=>{if(t.place)cnt[t.place]=(cnt[t.place]||0)+1;});
+  const nq=normTxt(q);
+  return Object.entries(cnt).filter(([p])=>!nq||normTxt(p).includes(nq)).sort((a,b)=>b[1]-a[1]).slice(0,6);
+}
+let _placeOpts=[];
+function placeAC(p){
+  const inp=document.getElementById(p+'-place'),box=document.getElementById(p+'-place-ac');if(!inp||!box)return;
+  const opts=placeOptions(inp.value).filter(([pl])=>pl!==inp.value);
+  if(!opts.length){box.style.display='none';return;}
+  _placeOpts=opts.map(o=>o[0]);
+  box.innerHTML=opts.map(([pl,n],i)=>`<div class="autocomplete-item" onmousedown="event.preventDefault()" onclick="placePick('${p}',_placeOpts[${i}])"><strong style="color:var(--text)">📍 ${escHTML(pl)}</strong> <small>${n} lançamento${n>1?'s':''}</small></div>`).join('');
+  box.style.display='block';
+}
+function placePick(p,v){const i=document.getElementById(p+'-place');i.value=v;placeACHide(p);}
+function placeACHide(p){const b=document.getElementById(p+'-place-ac');if(b)b.style.display='none';}
+function placeRowHTML(p,value,show){
+  return`<div class="${p==='tx'?'form-row':''}" id="${p}-place-row" style="${p==='ms'?'margin-bottom:11px;':''}${show?'':'display:none'}">
+    ${p==='tx'?`<label class="form-label" id="tx-place-lbl">Local (opcional)</label>`:`<div style="font-size:10px;color:#9a8e7e;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:5px;" id="ms-place-lbl">Local (opcional)</div>`}
+    <div class="autocomplete-wrap"><input class="${p==='tx'?'form-input':'m-input'}" id="${p}-place" maxlength="80" autocomplete="off" value="${escHTML(value||'')}" placeholder="Onde foi a compra?" oninput="placeAC('${p}')" onfocus="placeAC('${p}')" onblur="setTimeout(()=>placeACHide('${p}'),150)">
+    <div class="autocomplete-list" id="${p}-place-ac" style="display:none"></div></div></div>`;
+}
+const placeOf=p=>(document.getElementById(p+'-place')?.value||'').trim();
+
+// ---------- tooltip dos gráficos no visual do app ----------
+(function(){
+  if(!window.Chart)return;
+  const T=Chart.defaults.plugins.tooltip;
+  T.enabled=false;
+  T.external=function({chart,tooltip}){
+    const host=chart.canvas.parentNode;
+    if(getComputedStyle(host).position==='static')host.style.position='relative';
+    let el=host.querySelector(':scope > .nx-tip');
+    if(!el){el=document.createElement('div');el.className='nx-tip';host.appendChild(el);}
+    if(!tooltip||tooltip.opacity===0){el.style.opacity=0;return;}
+    const donut=chart.config.type==='doughnut';
+    const pts=[...(tooltip.dataPoints||[])].filter(p=>p.raw!==null&&p.raw!==undefined).sort((a,b)=>a.datasetIndex-b.datasetIndex);
+    if(!pts.length){el.style.opacity=0;return;}
+    const total=donut?pts[0].dataset.data.reduce((s,v)=>s+(+v||0),0):0;
+    const rows=pts.map(p=>{
+      const ds=p.dataset;const line=ds.type==='line'||(!ds.type&&chart.config.type==='line');
+      const c=Array.isArray(ds.backgroundColor)?ds.backgroundColor[p.dataIndex]:(line?ds.borderColor:ds.backgroundColor);
+      const lbl=donut?p.label:(ds.label||'');const v=typeof p.raw==='number'?p.raw:(p.parsed?.y??0);
+      return`<div class="nx-tip-row${lbl==='Saldo'?' total':''}"><i style="background:${c}"></i><span>${escHTML(lbl)}</span><b class="${lbl==='Saldo'?(v>=0?'pos':'neg'):''}">${fmt(v)}${donut&&total?` <small>${Math.round(v/total*100)}%</small>`:''}</b></div>`;
+    }).join('');
+    const title=donut?'':(tooltip.title||[]).join(' ');
+    el.innerHTML=(title?`<div class="nx-tip-title">${escHTML(title)}</div>`:'')+rows;
+    const cw=host.clientWidth,ch=host.clientHeight,w=el.offsetWidth,h=el.offsetHeight;
+    let left=tooltip.caretX+14;if(left+w>cw)left=tooltip.caretX-w-14;if(left<0)left=Math.max(0,(cw-w)/2);
+    let top=tooltip.caretY-h/2;top=Math.max(-4,Math.min(top,ch-h+4));
+    el.style.left=left+'px';el.style.top=top+'px';el.style.opacity=1;
+  };
+  // sem a cor "berrante" que o Chart.js aplica ao passar o mouse
+  Chart.defaults.hoverBackgroundColor=(ctx,o)=>o.backgroundColor;
+  Chart.defaults.hoverBorderColor=(ctx,o)=>o.borderColor;
+})();
 </script>
 
 <!-- ============================================================ -->
@@ -1967,7 +2063,7 @@ function renderDespesas(){
   document.getElementById('despesas-total-label').textContent=`${list.length} transações — total ${fmt(tot)}`;
   document.getElementById('despesas-tbody').innerHTML=list.length?list.map(d=>`<tr>
     <td>${tagIcon(d.tag)}</td>
-    <td><div class="tx-name">${txLabel(d)}<small>${MONTHS[d.month]}</small></div></td>
+    <td><div class="tx-name">${txLabel(d)}<small>${MONTHS[d.month]}${d.place?' · 📍 '+escHTML(d.place):''}</small></div></td>
     <td><span class="tag ${tc(d.tag)}">${d.tag}</span></td>
     <td><span class="meio-tag">${d.meio||'—'}</span></td>
     <td class="text-right"><span class="tx-value expense">${fmt(d.value)}</span></td>
@@ -2005,6 +2101,7 @@ function openAddModal(type,pre=null,editId=null){
   document.getElementById('tx-meio').innerHTML=state.categories.meio.map(m=>`<option value="${m}">${m}</option>`).join('');
   document.getElementById('tx-month').value=editId&&pre?pre.month:new Date().getMonth();
   document.getElementById('tx-month-lbl').textContent='Mês · '+(editId&&pre?pre.year:APP_YEAR);
+  document.getElementById('tx-place-slot').innerHTML=placeRowHTML('tx',editId&&pre?pre.place:(pre?lastPlaceFor(pre.name):''),type==='despesa'&&HAS_PLACE);
   document.getElementById('tx-inst-slot').innerHTML=type==='despesa'&&!editId?instBlockHTML('tx'):(editId&&pre&&pre.itot?`<p class="nx-p" style="margin:-4px 0 12px;">Parcela ${pre.ino}/${pre.itot} — a edição vale só para esta parcela.</p>`:'');
   if(pre){
     document.getElementById('tx-name').value=pre.name||'';
@@ -2015,7 +2112,7 @@ function openAddModal(type,pre=null,editId=null){
   }else{
     document.getElementById('tx-name').value='';document.getElementById('tx-value').value='';document.getElementById('tx-date').value='';
   }
-  refreshInputs(document.getElementById('modal-add'));
+  refreshInputs(document.getElementById('modal-add'));placeLabel('tx');
   document.getElementById('modal-add').classList.add('open');
 }
 function saveTransaction(){
@@ -2025,14 +2122,15 @@ function saveTransaction(){
   const tag=document.getElementById('tx-tag').value;
   const meio=document.getElementById('tx-meio').value;
   const date=document.getElementById('tx-date').value;
+  const place=curType==='despesa'?placeOf('tx'):'';
   if(!name||isNaN(value)||value<=0){toast('Preencha nome e valor','error');return;}
   if(_editTxId){
-    updateTransaction(curType,_editTxId,{name,value,month,tag,meio:curType==='despesa'?meio:'',date});
+    updateTransaction(curType,_editTxId,{name,value,month,tag,meio:curType==='despesa'?meio:'',date,place});
     toast('Atualizado!','success');
   }else{
-    const inst=curType==='despesa'?saveInstallmentsFrom('tx',{name,value,month,tag,meio,date}):false;
+    const inst=curType==='despesa'?saveInstallmentsFrom('tx',{name,value,month,tag,meio,date,place}):false;
     if(inst==='err')return;
-    if(!inst){const t=addTransaction(curType,{name,value,month,tag,meio:curType==='despesa'?meio:'',date});toast('Adicionado!','success');checkBudgetAlert(t);}
+    if(!inst){const t=addTransaction(curType,{name,value,month,tag,meio:curType==='despesa'?meio:'',date,place});toast('Adicionado!','success');checkBudgetAlert(t);}
   }
   _editTxId=null;
   closeModal('modal-add');
@@ -2064,6 +2162,7 @@ function applyAC(id){
   if(r.value>0)document.getElementById('tx-value').value=r.value;
   const tag=document.getElementById('tx-tag');if([...tag.options].some(o=>o.value===r.tag))tag.value=r.tag;
   if(r.meio)document.getElementById('tx-meio').value=r.meio;
+  {const pl=document.getElementById('tx-place');if(pl&&!pl.value)pl.value=lastPlaceFor(r.name);placeLabel('tx');}
   if(r.day){document.getElementById('tx-date').value=recDateFor(r,APP_YEAR,parseInt(document.getElementById('tx-month').value));}
   hideAutocomplete();refreshInputs(document.getElementById('modal-add'));instUI('tx');
   document.getElementById('tx-value').focus();
@@ -2323,7 +2422,7 @@ function mSheetLabel(t){return`<div style="font-size:10px;color:#9a8e7e;text-tra
 // ========== HOME SCREEN ==========
 function mCalcScore(){
   const g=goalCalc();
-  const allT=MONTHS.map((_,i)=>getMT(i));
+  const allT=MONTHS.map((_,i)=>getMTr(i));
   const totalSaved=allT.reduce((s,t)=>s+t.saldo,0);
   const totalRec=allT.reduce((s,t)=>s+t.receita,0);
   const am=allT.filter(t=>t.receita>0).length||1;
@@ -2337,8 +2436,8 @@ function mCalcScore(){
 
 function mRenderHome(){
   const g=goalCalc();
-  const cur=MONTHS.map((_,i)=>getMT(i)).reduce((last,t,i)=>t.receita>0||t.despesa>0?i:last,-1);
-  const curIdx=cur>=0?cur:new Date().getMonth();
+  // sempre o mês atual (ou o último com dados, ao ver um ano anterior) — parcelas futuras não "puxam" a home
+  const curIdx=refMonth();
   const t=getMT(curIdx);
   const totalSaved=g.saved;
   const {score}=mCalcScore();
@@ -2599,7 +2698,7 @@ function mShowScoreDetail(){
 
 // ========== ANÁLISE SCREEN ==========
 // último mês com movimentação (para a linha não "andar" até dezembro sem dados)
-function lastActiveMonth(){let l=-1;for(let i=0;i<12;i++){const t=getMT(i);if(t.receita>0||t.despesa>0)l=i;}return l;}
+function lastActiveMonth(){let l=-1;for(let i=0;i<12;i++){const t=getMTr(i);if(t.receita>0||t.despesa>0)l=i;}return l;}
 // agrupa por categoria, do maior para o menor
 function catTotals(list){
   const m={};list.forEach(t=>{m[t.tag]=(m[t.tag]||0)+t.value;});
@@ -2636,7 +2735,7 @@ function mRenderLancamentos(){
         ${mTagIcon(item.tag,36)}
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:600;color:#2a2218;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${txLabel(item)}</div>
-          <div style="font-size:10px;color:#9a8e7e;margin-top:1px;">${MONTHS_S[item.month]}${item.date?' · '+item.date.slice(8,10)+'/'+item.date.slice(5,7):''} · ${item.tag}</div>
+          <div style="font-size:10px;color:#9a8e7e;margin-top:1px;">${MONTHS_S[item.month]}${item.date?' · '+item.date.slice(8,10)+'/'+item.date.slice(5,7):''} · ${item.place?'📍 '+escHTML(item.place):item.tag}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           <div style="font-size:13px;font-weight:700;color:${isRec?'#1b854f':'#b54d3a'};white-space:nowrap;">${fmtK(item.value)}</div>
@@ -2665,6 +2764,7 @@ function mShowTxDetail(id, type){
         {l:'Categoria',v:(TAG_ICON[item.tag]||'')+' '+item.tag,c:'#2a2218'},
         {l:'Mês',v:MONTHS[item.month],c:'#2a2218'},
         ...(!isRec&&item.meio?[{l:'Meio de pagamento',v:item.meio,c:'#2a2218'}]:[]),
+        ...(!isRec&&item.place?[{l:isPixMeio(item.meio)?'Destinatário':'Local',v:'📍 '+escHTML(item.place),c:'#2a2218'}]:[]),
         ...(item.date?[{l:'Data',v:fmtDateBR(item.date),c:'#2a2218'}]:[]),
         ...(item.itot?[{l:'Parcela',v:`${item.ino} de ${item.itot}`,c:'#7a5010'}]:[]),
       ].map(row=>`
@@ -2771,7 +2871,8 @@ function mOpenSheet(type, recId, editId){
       <div style="margin-bottom:11px;">${mSheetLabel('Data')}${dateFieldHTML('ms-date',editTx?(editTx.date||''):(pre&&pre.day?recDateFor(pre,APP_YEAR,selMonth):''),"syncMonthFromDate('ms-date','ms-month');instUI('ms')",'m')}</div>
       <div style="margin-bottom:11px;">${mSheetLabel('Mês · '+(editTx?editTx.year:APP_YEAR))}<select id="ms-month" class="m-input" onchange="instUI('ms')">${MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('')}</select></div>
       <div style="margin-bottom:11px;">${mSheetLabel('Tag')}<select id="ms-tag" class="m-input">${cats.map(c=>`<option value="${c}"${pre&&pre.tag===c?' selected':''}>${TAG_ICON[c]||''} ${c}</option>`).join('')}</select></div>
-      <div id="ms-meio-row" style="margin-bottom:11px;${mSheetType==='despesa'?'':'display:none'}">${mSheetLabel('Meio')}<select id="ms-meio" class="m-input">${state.categories.meio.map(m=>`<option value="${m}"${pre&&pre.meio===m?' selected':''}>${m}</option>`).join('')}</select></div>
+      <div id="ms-meio-row" style="margin-bottom:11px;${mSheetType==='despesa'?'':'display:none'}">${mSheetLabel('Meio')}<select id="ms-meio" class="m-input" onchange="placeLabel('ms')">${state.categories.meio.map(m=>`<option value="${m}"${pre&&pre.meio===m?' selected':''}>${m}</option>`).join('')}</select></div>
+      ${placeRowHTML('ms',editTx?editTx.place:(pre?lastPlaceFor(pre.name):''),mSheetType==='despesa'&&HAS_PLACE)}
       <div id="ms-inst-slot">${!editTx&&mSheetType==='despesa'?instBlockHTML('ms'):''}</div>
       ${editTx&&editTx.itot?`<p class="nx-p" style="margin-bottom:8px;">Parcela ${editTx.ino}/${editTx.itot} — a edição vale só para esta parcela.</p>`:''}
       <div style="display:flex;gap:10px;margin-top:8px;">
@@ -2779,7 +2880,7 @@ function mOpenSheet(type, recId, editId){
         <button onclick="mSaveTx()" style="${MBTN_P}">Salvar</button>
       </div>
     </div>`);
-  refreshInputs(document.getElementById('m-sheet-container'));
+  refreshInputs(document.getElementById('m-sheet-container'));placeLabel('ms');
 }
 
 // ---- AUTOCOMPLETE DE RECORRENTES (mobile): sugere enquanto digita, de qualquer tipo ----
@@ -2808,6 +2909,7 @@ function mApplyRec(id){
   if(r.value>0)document.getElementById('ms-val').value=moneyStr(r.value);
   const tag=document.getElementById('ms-tag');if([...tag.options].some(o=>o.value===r.tag))tag.value=r.tag;
   const meio=document.getElementById('ms-meio');if(r.meio&&meio&&[...meio.options].some(o=>o.value===r.meio))meio.value=r.meio;
+  {const pl=document.getElementById('ms-place');if(pl&&!pl.value)pl.value=lastPlaceFor(r.name);placeLabel('ms');}
   if(r.day)document.getElementById('ms-date').value=recDateFor(r,APP_YEAR,parseInt(document.getElementById('ms-month').value));
   refreshInputs(document.getElementById('m-sheet-container'));instUI('ms');
   document.getElementById('ms-ac').innerHTML='';
@@ -2820,6 +2922,7 @@ function mUpdateSheet(){
   if(tagSel)tagSel.innerHTML=cats.map(c=>`<option value="${c}">${TAG_ICON[c]||''} ${c}</option>`).join('');
   const meioRow=document.getElementById('ms-meio-row');
   if(meioRow)meioRow.style.display=mSheetType==='despesa'?'':'none';
+  const plRow=document.getElementById('ms-place-row');if(plRow)plRow.style.display=mSheetType==='despesa'&&HAS_PLACE?'':'none';
   const slot=document.getElementById('ms-inst-slot');
   if(slot&&!_mEditId){const had=!!document.getElementById('ms-inst');if(mSheetType==='despesa'&&!had)slot.innerHTML=instBlockHTML('ms');if(mSheetType!=='despesa')slot.innerHTML='';}
   const rb=document.getElementById('mst-rec'),db=document.getElementById('mst-desp');
@@ -2834,14 +2937,15 @@ function mSaveTx(){
   const tag=document.getElementById('ms-tag').value;
   const meio=document.getElementById('ms-meio')?.value||'';
   const date=document.getElementById('ms-date').value||'';
+  const place=mSheetType==='despesa'?placeOf('ms'):'';
   if(!name||isNaN(value)||value<=0){toast('Preencha nome e valor','error');return;}
   if(_mEditId){
-    updateTransaction(mSheetType,_mEditId,{name,value,month,tag,meio:mSheetType==='despesa'?meio:'',date});
+    updateTransaction(mSheetType,_mEditId,{name,value,month,tag,meio:mSheetType==='despesa'?meio:'',date,place});
     toast('Atualizado!','success');
   }else{
-    const inst=mSheetType==='despesa'?saveInstallmentsFrom('ms',{name,value,month,tag,meio,date}):false;
+    const inst=mSheetType==='despesa'?saveInstallmentsFrom('ms',{name,value,month,tag,meio,date,place}):false;
     if(inst==='err')return;
-    if(!inst){const t=addTransaction(mSheetType,{name,value,month,tag,meio:mSheetType==='despesa'?meio:'',date});toast('Adicionado!','success');checkBudgetAlert(t);}
+    if(!inst){const t=addTransaction(mSheetType,{name,value,month,tag,meio:mSheetType==='despesa'?meio:'',date,place});toast('Adicionado!','success');checkBudgetAlert(t);}
   }
   _mEditId=null;
   mCloseSheet();
@@ -3471,12 +3575,13 @@ async function exportXLSX(){
       .order('year',{ascending:true}).order('month',{ascending:true}).order('date',{ascending:true,nullsFirst:true});
     if(error)throw error;
     if(!data.length){toast('Nenhuma transação para exportar','error');return;}
-    const aoa=[['Tipo','Transação','Valor','Categoria','Meio','Data']];
+    const aoa=[['Tipo','Transação','Valor','Categoria','Meio','Data','Local/Destinatário']];
     data.forEach(t=>{
       aoa.push([
         t.kind==='receita'?'Receita':'Despesa',
         t.name,Number(t.value),t.tag,t.meio||'',
         t.date?fmtDateBR(t.date):MONTHS_S[t.month].toLowerCase()+'/'+t.year,
+        t.place||'',
       ]);
     });
     const ws=XLSX.utils.aoa_to_sheet(aoa);
