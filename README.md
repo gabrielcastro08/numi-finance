@@ -32,6 +32,7 @@ por agente de IA → validação.
 - **Seletor de ano e visão geral** de todos os anos: ano a ano, patrimônio acumulado e compromissos futuros
 - **Compras parceladas**, **recorrentes com dia do mês** e **lançar pendentes** em lote
 - **Limite mensal por categoria** com aviso ao chegar perto
+- **Objetivos (caixinhas)**: viagem, compra ou reserva com valor, data e dinheiro guardado; o app calcula quanto guardar por mês, se cabe no que você costuma economizar, sugere o que adiar e projeta a economia numa linha do tempo, com simulador "e se eu guardar…"
 - **Meta de economia** com cálculo automático da meta mensal a partir da data de início do usuário
 - **Funciona offline**: alterações ficam na fila do aparelho e sobem quando a conexão volta; desfazer exclusões
 - **Onboarding guiado**: perfil com foto, ponto de partida, meta e importação de dados anteriores
@@ -97,7 +98,7 @@ explicação do processo e do que funcionou.
 ## Estrutura
 
 ```
-controle-financeiro-deploy/   app publicado (index.html, sw.js, manifest, ícones, assets)
+controle-financeiro-deploy/   app publicado (index.html, js/, sw.js, manifest, ícones, mascote)
 supabase/                     schema + RLS + storage, e script de migração
 docs/
   ai-workflow/                specs usadas para conduzir o agente de IA
@@ -129,6 +130,8 @@ topo do script em `index.html`.
 
 - [x] Seletor de ano e visão geral multi-ano
 - [x] Parcelas, limites por categoria e recorrentes com dia
+- [x] Objetivos com planejamento mensal, prioridades e linha do tempo
+- [ ] Assistente de IA que consulta os dados, pesquisa na web e executa ações no app com confirmação
 - [ ] Categorização automática de transações com LLM (Supabase Edge Function, saída estruturada e validada)
 - [ ] Perguntas em linguagem natural sobre os próprios gastos
 - [ ] Resumo mensal escrito por IA (hoje os destaques são gerados por regras)

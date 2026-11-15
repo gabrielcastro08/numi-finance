@@ -9,7 +9,9 @@
   const ICON=V13&&!/[?&]noicon(&|$)/.test(location.search);
   // ?noplace simula o banco sem a coluna de local (1.5)
   const PLACE=V13&&!/[?&]noplace(&|$)/.test(location.search);
-  const db={profiles:[],transactions:[],recurrents:[],categories:[]};
+  // ?nogoals simula o banco sem as tabelas de objetivos (1.7)
+  const GOALS=!/[?&]nogoals(&|$)/.test(location.search);
+  const db={profiles:[],transactions:[],recurrents:[],categories:[],goals:[],goal_moves:[]};
   db.profiles.push({id:UID,name:'Ana Teste',birth_date:null,avatar_url:null,start_date:Y+'-01-01',goal:15000});
   const cats={receita:['Salário','Bônus','Investimento','Atividade complementar','Presente'],
     despesa:['Alimentação','Cuidados Pessoais','Lazer','Presente/Doação','Saúde','Transporte','Utilitários','Vestuário'],
@@ -45,6 +47,16 @@
     if(m%4===2)tx('despesa','Farmácia',50+rnd()*150,'Saúde','Débito',14);
     if(m%2===1)tx('despesa','Cabeleireiro',70,'Cuidados Pessoais','Pix',11);
   }
+  // objetivos fictícios: viagem com data, reserva sem data, notebook perto e um já realizado
+  {const iso=(k,d)=>`${Math.floor(k/12)}-${String(k%12+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+   const nk=now.getFullYear()*12+now.getMonth();
+   const G=[['Viagem para o Chile','✈️',12000,iso(nk+8,15),0,'ativo',[600,600,700,600],[{label:'Passagens',amount:4200},{label:'Hospedagem (10 noites)',amount:3800},{label:'Passeios e comida',amount:3000}]],
+     ['Reserva de emergência','🛟',20000,null,1,'ativo',[1000,1000,1000],[]],
+     ['Notebook novo','💻',7500,iso(nk+4,1),2,'ativo',[500,500],[]],
+     ['Bicicleta','🚲',2400,iso(nk-2,10),3,'concluido',[800,800,800],[]]];
+   G.forEach(([n,ic,t,d,p,st,mv,plan])=>{const gid=id();
+     db.goals.push({id:gid,user_id:UID,name:n,icon:ic,target:t,target_date:d,priority:p,status:st,plan,notes:null,created_at:new Date().toISOString(),done_at:st==='concluido'?new Date(Date.now()-40*864e5).toISOString():null});
+     mv.forEach((a,i)=>db.goal_moves.push({id:id(),user_id:UID,goal_id:gid,amount:a,date:iso(nk-(mv.length-1-i)-(st==='concluido'?3:0),5),note:null,created_at:new Date().toISOString()}));});}
   window.__mockdb=db;
 
   function query(table){
@@ -62,6 +74,7 @@
       then(res,rej){return Promise.resolve(window.__offline?{data:null,error:{message:'TypeError: Failed to fetch'},status:0}:run()).then(res,rej);}
     };
     function run(){
+      if(!GOALS&&(table==='goals'||table==='goal_moves'))return{data:null,error:{code:'PGRST205',message:`Could not find the table 'public.${table}' in the schema cache`},status:404};
       const T=db[table];const match=r=>filters.every(f=>f(r));
       if(!PLACE&&payload&&op!=='select'&&(Array.isArray(payload)?payload:[payload]).some(r=>'place' in r))return{data:null,error:{message:"Could not find the 'place' column",code:'PGRST204'},status:400};
       if(!ICON&&payload&&op!=='select'&&(Array.isArray(payload)?payload:[payload]).some(r=>'icon' in r))return{data:null,error:{message:"Could not find the 'icon' column",code:'PGRST204'},status:400};

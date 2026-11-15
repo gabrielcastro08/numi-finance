@@ -1,6 +1,6 @@
 // Numi — service worker
 // IMPORTANTE: incrementar o nome do cache a cada versão publicada (numi-vN).
-const CACHE = 'numi-v7';
+const CACHE = 'numi-v8';
 const SHELL = ['/', '/index.html', '/manifest.json',
                '/icons/numi-icon-192.png', '/icons/numi-icon-512.png',
                '/mascote/malabares.webp', '/mascote/aceno.webp', '/mascote/dormindo.webp'];

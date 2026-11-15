@@ -1,5 +1,15 @@
 # Changelog — Numi
 
+## [1.7.0] — objetivos
+- Nova área de Objetivos (aba no mobile, item no menu do desktop): viagem, compra, curso, reserva…
+- Cada objetivo tem valor estimado, data, "caixinha" (guardar e retirar dinheiro) e orçamento detalhado por itens
+- O app calcula quanto guardar por mês, o seu ritmo real, quando você chega lá e a sua economia depois de realizar
+- Visão de conjunto: livre para alocar, quanto você costuma guardar × quanto os objetivos pedem, com sugestão do que adiar
+- Linha do tempo com a economia projetada e cada objetivo na data
+- Simulador "e se eu guardar…" no detalhe do objetivo
+- Prioridades (subir/descer), pausar, "Realizei!" (registra a despesa e comemora) e excluir com desfazer
+- Card de objetivos na tela inicial
+
 ## [1.6.1] — tipografia
 - Títulos e valores em Fraunces Bold (no lugar da Lora itálica); textos corridos seguem em Plus Jakarta Sans
 
