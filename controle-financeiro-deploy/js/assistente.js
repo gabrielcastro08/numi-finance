@@ -13,7 +13,8 @@ const AI_URL=SUPABASE_URL+'/functions/v1/numi-ai';
 const AI_MAX_MSGS=40;            // conversa maior que isso recomeça (o custo cresce com o histórico)
 const AI_IDLE_RESET=6*3600e3;    // depois de 6h parado, abre uma conversa nova
 const AI={open:false,busy:false,msgs:[],view:[],last:0};
-const AI_SUGGEST=['Como foi meu mês?','Onde estou gastando mais?','Lança 45 reais de farmácia hoje','Vou conseguir bater meus objetivos?'];
+const AI_CONV_VER=3; // sobe quando as ferramentas mudam: conversas antigas recomeçam
+const AI_SUGGEST=['Como foi meu mês?','Onde estou gastando mais?','Lança 45 reais de farmácia hoje','Quanto custa uma viagem de 7 dias pro Chile em julho?'];
 const AI_TOOL_LABEL={resumo_financeiro:'Olhando seu panorama',buscar_lancamentos:'Procurando lançamentos',
   gastos_por_categoria:'Somando as categorias',objetivos:'Conferindo seus objetivos'};
 
@@ -21,11 +22,11 @@ const AI_TOOL_LABEL={resumo_financeiro:'Olhando seu panorama',buscar_lancamentos
 const _aiKey=()=>'numi-ai-'+(USER?.id||'anon');
 function aiLoad(){
   try{const o=JSON.parse(localStorage.getItem(_aiKey())||'null');
-    if(o&&Date.now()-(o.last||0)<AI_IDLE_RESET){AI.msgs=o.msgs||[];AI.view=(o.view||[]).map(v=>v.r==='card'&&v.state==='pending'?{...v,state:'cancel',edit:null}:v);AI.last=o.last;}
+    if(o&&o.ver===AI_CONV_VER&&Date.now()-(o.last||0)<AI_IDLE_RESET){AI.msgs=o.msgs||[];AI.view=(o.view||[]).map(v=>v.r==='card'&&v.state==='pending'?{...v,state:'cancel',edit:null}:v);AI.last=o.last;}
     else{AI.msgs=[];AI.view=[];}
   }catch(e){AI.msgs=[];AI.view=[];}
 }
-function aiSave(){AI.last=Date.now();try{localStorage.setItem(_aiKey(),JSON.stringify({msgs:AI.msgs,view:AI.view,last:AI.last}));}catch(e){}}
+function aiSave(){AI.last=Date.now();try{localStorage.setItem(_aiKey(),JSON.stringify({ver:AI_CONV_VER,msgs:AI.msgs,view:AI.view,last:AI.last}));}catch(e){}}
 function aiNew(){AI.msgs=[];AI.view=[];aiSave();aiRender();document.getElementById('ai-input')?.focus();}
 
 // ============================================================
@@ -223,13 +224,17 @@ function aiPrepare(name,i){
   }
   if(name==='criar_objetivo'){
     if(typeof HAS_GOALS==='undefined'||!HAS_GOALS)return{error:'a área de objetivos não está disponível'};
-    const v=_num(i.valor);if(!(v>0))return{error:'valor inválido'};
+    const plan=(Array.isArray(i.orcamento)?i.orcamento:[]).map(x=>({label:String(x?.item||'').trim().slice(0,60),amount:_num(x?.valor)}))
+      .filter(x=>x.label&&x.amount>0).slice(0,30);
+    const planTot=plan.reduce((a,x)=>a+x.amount,0);
+    const v=_num(i.valor)>0?_num(i.valor):Math.round(planTot*100)/100;if(!(v>0))return{error:'valor inválido'};
     const nome=String(i.nome||'').trim().slice(0,80);if(!nome)return{error:'falta o nome'};
     const date=_isoOK(i.data)?i.data:null;const ja=_num(i.ja_guardado)>0?_num(i.ja_guardado):0;
-    const icon=(String(i.icone||'').trim().slice(0,8))||'🎯';
+    const icon=(String(i.icone||'').trim().slice(0,8))||'🎯';const notes=String(i.notas||'').slice(0,2000);
     const rows=[['Valor estimado',fmt(v)],['Quando',date?fmtDateBR(date):'sem data']];if(ja)rows.push(['Já guardado',fmt(ja)]);
+    plan.forEach(x=>rows.push(['· '+x.label,fmt(x.amount)]));
     return{ico:icon,title:'Criar objetivo: '+nome,rows,
-      run(){const g=addGoal({name:nome,icon,target:v,target_date:date});if(ja)addGoalMove(g.id,ja,todayISO(),'Já guardado');_afterChange();
+      run(){const g=addGoal({name:nome,icon,target:v,target_date:date,plan,notes});if(ja)addGoalMove(g.id,ja,todayISO(),'Já guardado');_afterChange();
         return{info:{ok:true,feito:'objetivo criado',id:g.id},undo(){state.goals=state.goals.filter(x=>x.id!==g.id);state.goalMoves=state.goalMoves.filter(m=>m.goal_id!==g.id);
           dbOp({t:'goals',k:'delete',id:g.id});_afterChange();}};}};
   }
@@ -329,7 +334,7 @@ function aiRenderCard(v,keepInputs){
 // ============================================================
 //  CONVERSA (loop: IA → ferramentas no app → IA ...)
 // ============================================================
-async function aiCall(onText){
+async function aiCall(onText,onStatus){
   const{data:{session}}=await sb.auth.getSession();
   const res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json',
       Authorization:'Bearer '+(session?.access_token||''),apikey:SUPABASE_ANON_KEY},
@@ -346,6 +351,7 @@ async function aiCall(onText){
       if(!line.startsWith('data:'))continue;
       const ev=JSON.parse(line.slice(5));
       if(ev.t==='text')onText(ev.d);
+      else if(ev.t==='status'&&onStatus)onStatus(ev.d);
       else if(ev.t==='done')done=ev;
       else if(ev.t==='error')throw new Error(ev.message);
     }
@@ -366,8 +372,12 @@ async function aiAsk(q){
   aiRender();
   try{
     let ok=false;
-    for(let step=0;step<10;step++){
-      const r=await aiCall(d=>{cur.text+=d;cur.status='';aiRenderLast(cur);});
+    for(let step=0;step<14;step++){
+      const r=await aiCall(d=>{cur.text+=d;cur.status='';aiRenderLast(cur);},
+        st=>{cur.status=st;if(cur.text&&!/\n$/.test(cur.text))cur.text+='\n\n';aiRenderLast(cur);});
+      aiAddSources(cur,r.content);
+      if(r.stop_reason==='pause_turn'){   // a busca na web ainda não terminou: reenvia para continuar
+        AI.msgs.push({role:'assistant',content:r.content});cur.status=cur.status||'Pesquisando na internet';aiRenderLast(cur);continue;}
       const uses=(r.content||[]).filter(b=>b.type==='tool_use');
       if(r.stop_reason==='tool_use'&&uses.length){
         AI.msgs.push({role:'assistant',content:r.content});
@@ -409,6 +419,13 @@ async function aiAsk(q){
   }
   AI.busy=false;aiSave();aiRender();
 }
+// fontes citadas nas respostas com pesquisa (só links http/https)
+function aiAddSources(cur,content){
+  (content||[]).forEach(b=>(b.type==='text'&&Array.isArray(b.citations)?b.citations:[]).forEach(c=>{
+    const url=String(c?.url||'');if(!/^https?:\/\//i.test(url))return;
+    cur.sources=cur.sources||[];if(cur.sources.some(x=>x.url===url)||cur.sources.length>=6)return;
+    cur.sources.push({url,title:String(c.title||'').slice(0,90)});}));
+}
 function aiRetry(i){const v=AI.view[i];if(!v||AI.busy)return;AI.view.splice(i,1);const q=v.q;
   if(AI.view.length&&AI.view[AI.view.length-1].r==='u'&&AI.view[AI.view.length-1].text===q)AI.view.pop();aiAsk(q);}
 
@@ -433,7 +450,8 @@ function aiBubble(v,i){
   if(v.r==='u')return`<div class="ai-msg u"><div class="ai-b">${escHTML(v.text)}</div></div>`;
   if(v.r==='e')return`<div class="ai-msg a err"><img class="ai-av" src="mascote/preocupado.webp" alt=""><div class="ai-b"><p>${escHTML(v.text)}</p>
     <button class="ai-retry" onclick="aiRetry(${i})">Tentar de novo</button></div></div>`;
-  return`<div class="ai-msg a"><img class="ai-av" src="mascote/rosto.webp" alt=""><div class="ai-b">${aiMd(v.text)}${v.status?`<div class="ai-status"><span class="ai-dots"><i></i><i></i><i></i></span>${escHTML(v.status)}…</div>`:''}</div></div>`;
+  return`<div class="ai-msg a"><img class="ai-av" src="mascote/rosto.webp" alt=""><div class="ai-b">${aiMd(v.text)}${v.sources?.length&&!v.status?`<div class="ai-src"><span>Fontes</span>${v.sources.map(x=>{let h='';try{h=new URL(x.url).hostname.replace(/^www\./,'');}catch(e){}
+    return`<a href="${escHTML(x.url)}" target="_blank" rel="noopener noreferrer" title="${escHTML(x.title)}">${escHTML(h||x.title)}</a>`;}).join('')}</div>`:''}${v.status?`<div class="ai-status"><span class="ai-dots"><i></i><i></i><i></i></span>${escHTML(v.status)}…</div>`:''}</div></div>`;
 }
 function aiRender(){
   const box=document.getElementById('ai-msgs');if(!box)return;
@@ -441,7 +459,7 @@ function aiRender(){
   box.innerHTML=AI.view.length?AI.view.map(aiBubble).join(''):`<div class="ai-hello">
       <img src="mascote/aceno.webp" alt="">
       <div class="ai-hello-t">Oi${name?', '+escHTML(name):''}! Eu sou o Numi.</div>
-      <div class="ai-hello-s">Pergunte sobre seu mês, seus gastos ou seus objetivos. Também posso lançar, editar e criar coisas pra você: é só pedir, e você confirma antes.</div>
+      <div class="ai-hello-s">Pergunte sobre seu mês, seus gastos ou seus objetivos. Também lanço, edito e crio coisas pra você (você confirma antes), e pesquiso na internet para planejar viagens e compras.</div>
       <div class="ai-sugs">${AI_SUGGEST.map(s=>`<button onclick="aiAsk(this.textContent)">${escHTML(s)}</button>`).join('')}</div>
     </div>`;
   const send=document.getElementById('ai-send');if(send)send.disabled=AI.busy;
@@ -554,6 +572,10 @@ body.ai-lock #ai-fab{display:none;}
 .ai-form button:disabled{opacity:.45;cursor:default;}
 .ai-foot{font-size:11px;color:#a0957f;text-align:center;padding:2px 12px 10px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:#fffefb;}
 @media (max-width:767px){.ai-panel{width:100%;box-shadow:none;}}
+.ai-src{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed #ece4d8;}
+.ai-src span{font-size:11px;color:#8a7f70;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-right:2px;}
+.ai-src a{font-size:12px;color:#1b854f;background:#eef6f0;border-radius:999px;padding:3px 9px;text-decoration:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ai-src a:hover{background:#dcefe2;}
 .ai-card{margin-left:38px;background:#fffefb;border:1.5px solid #cfe3d6;border-radius:16px;padding:12px 13px;font-size:14px;color:#2a2218;box-shadow:0 2px 10px rgba(27,133,79,.07);}
 .ai-card.st-cancel,.ai-card.st-undone{opacity:.6;border-color:#e6dfd2;box-shadow:none;}
 .ai-card-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;}

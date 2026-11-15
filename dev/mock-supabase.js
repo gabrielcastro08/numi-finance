@@ -144,6 +144,23 @@
     const msgs=body.messages,last=msgs[msgs.length-1];
     const evs=[];
     if(qs.has('aierr'))evs.push({t:'error',message:'Não consegui responder agora. Tenta de novo daqui a pouco.'});
+    else if(last.role==='user'&&last.content.some(b=>b.type==='text')&&/viagem|chile|custa/.test(last.content.find(b=>b.type==='text').text.toLowerCase())){
+      evs.push({t:'status',d:'Pesquisando na internet'});
+      evs.push({t:'done',stop_reason:'pause_turn',content:[{type:'server_tool_use',id:'srvtoolu_1',name:'web_search',input:{query:'passagem São Paulo Santiago julho preço'}},
+        {type:'web_search_tool_result',tool_use_id:'srvtoolu_1',content:[{type:'web_search_result',url:'https://www.latamairlines.com/br/pt',title:'LATAM',encrypted_content:'x'}]}]});
+    }
+    else if(last.role==='assistant'){
+      evs.push({t:'status',d:'Lendo uma página'});
+      const txt='Para 7 dias em Santiago em julho, dá pra contar com uns **R$ 7.900** por pessoa:\n- Passagem: R$ 2.400\n- Hospedagem: R$ 2.800\n- Comida e passeios: R$ 2.000\n- Seguro e imprevistos: R$ 700\n\nPreços de hoje, podem mudar. Brasileiro entra só com RG.';
+      txt.match(/.{1,14}/gs).forEach(d=>evs.push({t:'text',d}));
+      evs.push({t:'done',stop_reason:'tool_use',content:[
+        {type:'text',text:txt,citations:[{type:'web_search_result_location',url:'https://www.latamairlines.com/br/pt',title:'LATAM'},
+          {type:'web_search_result_location',url:'https://www.gov.br/mre/pt-br/embaixada-santiago',title:'Embaixada do Brasil em Santiago'},
+          {type:'web_search_result_location',url:'javascript:alert(1)',title:'ruim'}]},
+        {type:'tool_use',id:'tu_obj_'+Date.now(),name:'criar_objetivo',input:{nome:'Chile em julho',valor:0,data:'2027-07-10',icone:'🏔️',
+          orcamento:[{item:'Passagens',valor:2400},{item:'Hospedagem',valor:2800},{item:'Comida e passeios',valor:2000},{item:'Seguro e imprevistos',valor:700}],
+          notas:'Preços de nov/2026 (LATAM, Booking).'}}]});
+    }
     else if(last.content.some(b=>b.type==='text')){
       const q=last.content.find(b=>b.type==='text').text.toLowerCase();
       evs.push({t:'done',stop_reason:'tool_use',content:[{type:'thinking',thinking:'',signature:'sig'},...plan(q)]});

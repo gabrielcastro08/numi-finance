@@ -133,7 +133,7 @@ topo do script em `index.html`.
 - [x] Objetivos com planejamento mensal, prioridades e linha do tempo
 - [x] Assistente de IA que consulta os dados (Edge Function `numi-ai` + ferramentas executadas no app)
 - [x] Assistente: ações no app com cartão de confirmação (lançar, editar, excluir, objetivos, recorrentes, limites)
-- [ ] Assistente: pesquisa na web para planejar viagens e compras
+- [x] Assistente: pesquisa na web para planejar viagens e compras, com fontes e orçamento virando objetivo
 - [ ] Categorização automática de transações com LLM (Supabase Edge Function, saída estruturada e validada)
 - [ ] Resumo mensal escrito por IA (hoje os destaques são gerados por regras)
 

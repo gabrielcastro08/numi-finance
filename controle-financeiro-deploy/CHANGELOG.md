@@ -1,5 +1,11 @@
 # Changelog — Numi
 
+## [1.11.0] — o Numi pesquisa na internet
+- Planejamento com pesquisa: passagens, hospedagem, custo de passeios, exigências de entrada, preços de produtos
+- Enquanto pesquisa, o chat mostra "Pesquisando na internet" / "Lendo uma página"; a resposta traz as fontes usadas
+- O Numi monta um orçamento por itens, cruza com as suas finanças e oferece criar o objetivo já com o orçamento detalhado (você confirma no cartão)
+- Limite de 5 buscas e 3 páginas por resposta, para controlar o custo
+
 ## [1.10.0] — o Numi faz coisas por você
 - Peça no chat e o Numi lança receitas e despesas (inclusive parceladas), edita ou exclui lançamentos, cria objetivos, guarda ou retira dinheiro de um objetivo, cria recorrentes e define limites de categoria
 - Toda ação aparece como um cartão: dá para ajustar descrição, valor, data, categoria e pagamento antes de confirmar; nada acontece sem o clique em Confirmar
