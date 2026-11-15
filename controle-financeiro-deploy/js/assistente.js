@@ -13,7 +13,7 @@ const AI_URL=SUPABASE_URL+'/functions/v1/numi-ai';
 const AI_MAX_MSGS=40;            // conversa maior que isso recomeça (o custo cresce com o histórico)
 const AI_IDLE_RESET=6*3600e3;    // depois de 6h parado, abre uma conversa nova
 const AI={open:false,busy:false,msgs:[],view:[],last:0};
-const AI_SUGGEST=['Como foi meu mês?','Onde estou gastando mais?','Quanto gastei com delivery este ano?','Vou conseguir bater meus objetivos?'];
+const AI_SUGGEST=['Como foi meu mês?','Onde estou gastando mais?','Lança 45 reais de farmácia hoje','Vou conseguir bater meus objetivos?'];
 const AI_TOOL_LABEL={resumo_financeiro:'Olhando seu panorama',buscar_lancamentos:'Procurando lançamentos',
   gastos_por_categoria:'Somando as categorias',objetivos:'Conferindo seus objetivos'};
 
@@ -21,7 +21,7 @@ const AI_TOOL_LABEL={resumo_financeiro:'Olhando seu panorama',buscar_lancamentos
 const _aiKey=()=>'numi-ai-'+(USER?.id||'anon');
 function aiLoad(){
   try{const o=JSON.parse(localStorage.getItem(_aiKey())||'null');
-    if(o&&Date.now()-(o.last||0)<AI_IDLE_RESET){AI.msgs=o.msgs||[];AI.view=o.view||[];AI.last=o.last;}
+    if(o&&Date.now()-(o.last||0)<AI_IDLE_RESET){AI.msgs=o.msgs||[];AI.view=(o.view||[]).map(v=>v.r==='card'&&v.state==='pending'?{...v,state:'cancel',edit:null}:v);AI.last=o.last;}
     else{AI.msgs=[];AI.view=[];}
   }catch(e){AI.msgs=[];AI.view=[];}
 }
@@ -77,6 +77,7 @@ function aiToolResumo(){
     recorrentes:recs,
     parcelas_futuras:{total:_r2(sumV(futuras)),por_mes:Object.entries(porMes).map(([k,v])=>({mes:k,valor:_r2(v)}))},
     categorias:{despesa:state.categories.despesa,receita:state.categories.receita},
+    meios_de_pagamento:state.categories.meio||[],
   };
 }
 
@@ -105,7 +106,7 @@ function aiToolBuscar(i){
   const lim=Math.max(1,Math.min(100,parseInt(i.limite)||30));
   const nowK=_nowK();
   return{encontrados:list.length,soma:_r2(soma),mostrando:Math.min(lim,list.length),
-    itens:list.slice(0,lim).map(t=>({data:t.date||null,mes:_kYM(_txK(t)),tipo:t.kind,nome:t.name,valor:_r2(t.value),
+    itens:list.slice(0,lim).map(t=>({id:t.id,data:t.date||null,mes:_kYM(_txK(t)),tipo:t.kind,nome:t.name,valor:_r2(t.value),
       categoria:t.tag,meio:t.meio||undefined,local:t.place||undefined,
       parcela:t.itot?`${t.ino}/${t.itot}`:undefined,futuro:_txK(t)>nowK||undefined}))};
 }
@@ -134,7 +135,7 @@ function aiToolObjetivos(){
       falta_por_mes:P.fits?0:_r2(P.deficit),sugestao:P.tip?P.tip.replace(/<[^>]+>/g,''):null},
     objetivos:all.map((g,idx)=>{
       const i=P.info.get(g.id)||(typeof goalInfo==='function'?goalInfo(g,P.base):null);
-      return{nome:g.name,prioridade:idx+1,status:g.status,valor_estimado:_r2(g.target),
+      return{id:g.id,nome:g.name,icone:g.icon,prioridade:idx+1,status:g.status,valor_estimado:_r2(g.target),
         guardado:i?_r2(i.saved):null,falta:i?_r2(i.rem):null,progresso_pct:i?Math.round(i.pct):null,
         data_desejada:g.target_date,guardar_por_mes:i&&i.per!=null?_r2(i.per):null,
         ritmo_ultimos_3_meses:i?_r2(i.pace):null,previsao:i?lk(i.etaK):null,situacao:i?i.st.t:null,
@@ -153,6 +154,176 @@ function aiRunTool(name,input){
     if(name==='objetivos')return aiToolObjetivos();
     return{erro:'ferramenta desconhecida: '+name};
   }catch(e){return{erro:'falha ao consultar: '+(e.message||e)};}
+}
+
+// ============================================================
+//  AÇÕES (1.10): a IA pede, a pessoa confirma num cartão, o app executa
+//  Tudo passa pelas funções normais do app (dbOp → fila offline, mesmo banco).
+// ============================================================
+const AI_READ={resumo_financeiro:1,buscar_lancamentos:1,gastos_por_categoria:1,objetivos:1};
+const AI_RT={};   // cartões pendentes: {run, resolve, view}
+const AI_UNDO={}; // desfazer das ações confirmadas nesta sessão
+const _isoOK=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))&&!isNaN(new Date(s+'T00:00:00'));
+const _num=v=>{const n=Number(v);return isFinite(n)?Math.round(n*100)/100:NaN;};
+function _cat(tipo,name){
+  const l=state.categories[tipo]||[];const q=normTxt(name);if(!q)return null;
+  return l.find(c=>normTxt(c)===q)||l.find(c=>normTxt(c).includes(q)||q.includes(normTxt(c)))||null;
+}
+function _catOr(tipo,name){const l=state.categories[tipo]||[];return _cat(tipo,name)||l.find(c=>normTxt(c)==='outros')||l[0]||'';}
+function _meio(name){const l=state.categories.meio||[];const q=normTxt(name);if(!q)return'';return l.find(c=>normTxt(c)===q)||l.find(c=>normTxt(c).includes(q))||'';}
+const _dBR=iso=>iso?fmtDateBR(iso):'sem data';
+const _mmY=iso=>({month:+iso.slice(5,7)-1,year:+iso.slice(0,4)});
+function _txLine(t){return`${t.name} · ${fmt(t.value)} · ${t.date?fmtDateBR(t.date):MONTHS[t.month]+'/'+t.year}`;}
+function _afterChange(){try{rerender();}catch(e){}}
+
+// prepara o cartão de cada ação; devolve {error} quando o pedido é inválido (vira resposta para a IA, sem cartão)
+function aiPrepare(name,i){
+  i=i&&typeof i==='object'?i:{};
+  if(name==='criar_lancamento'){
+    const tipo=i.tipo==='receita'?'receita':'despesa';const v=_num(i.valor);
+    if(!(v>0))return{error:'valor inválido'};
+    const cat=_catOr(tipo,i.categoria);const date=_isoOK(i.data)?i.data:todayISO();
+    const n=tipo==='despesa'&&HAS_V13&&parseInt(i.parcelas)>=2?Math.min(72,parseInt(i.parcelas)):0;
+    const mode=i.valor_e==='parcela'?'parcela':'total';
+    const init={nome:(i.nome||cat||'').trim().slice(0,80),valor:v,categoria:cat,data:date,meio:tipo==='despesa'?_meio(i.meio):'',local:tipo==='despesa'?String(i.local||'').slice(0,80):''};
+    const rows=n?[['Parcelado',`${n}x de ${fmt(mode==='total'?v/n:v)}${mode==='total'?'':' (total '+fmt(v*n)+')'}`]]:[];
+    if(init.local)rows.push(['Local',init.local]);
+    return{ico:tipo==='despesa'?'↓':'↑',title:tipo==='despesa'?'Lançar despesa':'Lançar receita',rows,edit:{tipo,...init},
+      run(e){
+        if(!(e.valor>0))throw new Error('Informe um valor.');
+        if(!_isoOK(e.data))throw new Error('Escolha uma data.');
+        const base={name:e.nome||e.categoria,value:e.valor,tag:e.categoria,meio:e.meio,place:init.local,date:e.data,..._mmY(e.data)};
+        const made=n?addInstallments(base,n,mode,e.valor):[addTransaction(tipo,base)];
+        _afterChange();if(tipo==='despesa')checkBudgetAlert(made[0]);
+        return{info:{ok:true,feito:n?`${n} parcelas lançadas`:`${tipo} lançada`,nome:base.name,valor:e.valor,categoria:e.categoria,data:e.data,ids:made.map(t=>t.id)},
+          undo(){made.forEach(t=>deleteTransaction(t.kind,t.id));_afterChange();}};
+      }};
+  }
+  if(name==='editar_lancamento'){
+    const t=TX_ALL.find(x=>x.id===i.id);if(!t)return{error:'lançamento não encontrado (id inválido)'};
+    const f={},rows=[['Lançamento',_txLine(t)]];
+    if(i.nome&&i.nome!==t.name){f.name=String(i.nome).slice(0,80);rows.push(['Nome',`${t.name} → ${f.name}`]);}
+    if(_num(i.valor)>0&&_num(i.valor)!==t.value){f.value=_num(i.valor);rows.push(['Valor',`${fmt(t.value)} → ${fmt(f.value)}`]);}
+    if(i.categoria){const c=_cat(t.kind,i.categoria);if(!c)return{error:'categoria não existe: '+i.categoria};if(c!==t.tag){f.tag=c;rows.push(['Categoria',`${t.tag} → ${c}`]);}}
+    if(_isoOK(i.data)&&i.data!==t.date){f.date=i.data;Object.assign(f,_mmY(i.data));rows.push(['Data',`${_dBR(t.date)} → ${fmtDateBR(i.data)}`]);}
+    if(i.meio&&t.kind==='despesa'){const m=_meio(i.meio);if(m&&m!==t.meio){f.meio=m;rows.push(['Pagamento',`${t.meio||'—'} → ${m}`]);}}
+    if(i.local!=null&&t.kind==='despesa'&&String(i.local)!==t.place){f.place=String(i.local).slice(0,80);rows.push(['Local',`${t.place||'—'} → ${f.place||'—'}`]);}
+    if(rows.length===1)return{error:'nada para mudar: os valores pedidos já são os atuais'};
+    return{ico:'✏️',title:'Editar lançamento',rows,
+      run(){const old={name:t.name,value:t.value,tag:t.tag,meio:t.meio,place:t.place,date:t.date,month:t.month,year:t.year};
+        updateTransaction(t.kind,t.id,f);_afterChange();
+        return{info:{ok:true,feito:'lançamento editado',id:t.id},undo(){updateTransaction(t.kind,t.id,old);_afterChange();}};}};
+  }
+  if(name==='excluir_lancamento'){
+    const t=TX_ALL.find(x=>x.id===i.id);if(!t)return{error:'lançamento não encontrado (id inválido)'};
+    const rows=[['Lançamento',_txLine(t)],['Categoria',t.tag]];if(t.itot)rows.push(['Parcela',`${t.ino}/${t.itot} (só esta)`]);
+    return{ico:'🗑️',title:'Excluir lançamento',rows,danger:true,
+      run(){const saved={...t};deleteTransaction(t.kind,t.id);_afterChange();
+        return{info:{ok:true,feito:'lançamento excluído'},undo(){addTransaction(saved.kind,saved);_afterChange();}};}};
+  }
+  if(name==='criar_objetivo'){
+    if(typeof HAS_GOALS==='undefined'||!HAS_GOALS)return{error:'a área de objetivos não está disponível'};
+    const v=_num(i.valor);if(!(v>0))return{error:'valor inválido'};
+    const nome=String(i.nome||'').trim().slice(0,80);if(!nome)return{error:'falta o nome'};
+    const date=_isoOK(i.data)?i.data:null;const ja=_num(i.ja_guardado)>0?_num(i.ja_guardado):0;
+    const icon=(String(i.icone||'').trim().slice(0,8))||'🎯';
+    const rows=[['Valor estimado',fmt(v)],['Quando',date?fmtDateBR(date):'sem data']];if(ja)rows.push(['Já guardado',fmt(ja)]);
+    return{ico:icon,title:'Criar objetivo: '+nome,rows,
+      run(){const g=addGoal({name:nome,icon,target:v,target_date:date});if(ja)addGoalMove(g.id,ja,todayISO(),'Já guardado');_afterChange();
+        return{info:{ok:true,feito:'objetivo criado',id:g.id},undo(){state.goals=state.goals.filter(x=>x.id!==g.id);state.goalMoves=state.goalMoves.filter(m=>m.goal_id!==g.id);
+          dbOp({t:'goals',k:'delete',id:g.id});_afterChange();}};}};
+  }
+  if(name==='movimentar_objetivo'){
+    if(typeof HAS_GOALS==='undefined'||!HAS_GOALS)return{error:'a área de objetivos não está disponível'};
+    const g=goalById(i.objetivo_id)||state.goals.find(x=>normTxt(x.name)===normTxt(i.objetivo_id));if(!g)return{error:'objetivo não encontrado'};
+    const v=_num(i.valor);if(!(v>0))return{error:'valor inválido'};
+    const out=i.operacao==='retirar';const saved=goalSaved(g.id);
+    if(out&&v>saved+0.001)return{error:`só há ${fmt(saved)} guardado nesse objetivo`};
+    const rows=[['Valor',fmt(v)],['Guardado depois',fmt(saved+(out?-v:v))+' de '+fmt(g.target)]];if(i.nota)rows.push(['Nota',String(i.nota).slice(0,200)]);
+    return{ico:g.icon,title:(out?'Retirar de ':'Guardar em ')+g.name,rows,
+      run(){const m=addGoalMove(g.id,out?-v:v,todayISO(),String(i.nota||'').slice(0,200));_afterChange();
+        return{info:{ok:true,feito:out?'valor retirado':'valor guardado',guardado_agora:_r2(goalSaved(g.id))},
+          undo(){state.goalMoves=state.goalMoves.filter(x=>x.id!==m.id);dbOp({t:'goal_moves',k:'delete',id:m.id});_afterChange();}};}};
+  }
+  if(name==='criar_recorrente'){
+    const tipo=i.tipo==='receita'?'receita':'despesa';const v=Math.max(0,_num(i.valor)||0);
+    const nome=String(i.nome||'').trim().slice(0,80);if(!nome)return{error:'falta o nome'};
+    const cat=_catOr(tipo,i.categoria);const dia=parseInt(i.dia)>=1&&parseInt(i.dia)<=31?parseInt(i.dia):null;const meio=tipo==='despesa'?_meio(i.meio):'';
+    const rows=[['Tipo',tipo],['Valor',v>0?fmt(v):'variável'],['Categoria',cat]];if(dia)rows.push(['Dia',String(dia)]);if(meio)rows.push(['Pagamento',meio]);
+    return{ico:'🔁',title:'Nova recorrente: '+nome,rows,
+      run(){const r=addRecorrente({type:tipo,name:nome,value:v,tag:cat,meio,day:dia});_afterChange();
+        return{info:{ok:true,feito:'recorrente criada',id:r.id},undo(){deleteRecorrente(r.id);_afterChange();}};}};
+  }
+  if(name==='definir_limite'){
+    if(!HAS_V13)return{error:'limites não disponíveis'};
+    const c=_cat('despesa',i.categoria);if(!c)return{error:'categoria de despesa não encontrada: '+i.categoria};
+    const v=Math.max(0,_num(i.valor)||0);const old=state.limits[c]||0;
+    return{ico:'🎯',title:'Limite de '+c,rows:[['Limite mensal',`${old?fmt(old):'sem limite'} → ${v?fmt(v):'sem limite'}`]],
+      run(){setCategoryLimit(c,v);_afterChange();return{info:{ok:true,feito:v?'limite definido':'limite removido'},undo(){setCategoryLimit(c,old);_afterChange();}};}};
+  }
+  return{error:'ação desconhecida: '+name};
+}
+
+// cria o cartão na conversa; a promessa resolve quando a pessoa confirma ou cancela
+function aiMakeCard(u){
+  const p=aiPrepare(u.name,u.input);
+  if(p.error)return{error:p.error};
+  const id=u.id;
+  const view={r:'card',id,ico:p.ico,title:p.title,rows:p.rows||[],edit:p.edit||null,danger:!!p.danger,state:'pending',note:''};
+  const promise=new Promise(resolve=>{AI_RT[id]={run:p.run,resolve,view};});
+  return{view,promise};
+}
+function _cardEdits(v){
+  if(!v.edit)return null;const g=k=>document.getElementById(`aif-${k}-${v.id}`);
+  return{nome:(g('n')?.value||'').trim().slice(0,80),valor:moneyVal(g('v')),categoria:g('c')?.value||v.edit.categoria,
+    data:g('d')?.value||'',meio:g('m')?g('m').value:''};
+}
+function aiCardOk(id){
+  const rt=AI_RT[id];if(!rt)return;const v=rt.view;
+  try{
+    const e=_cardEdits(v);
+    const res=rt.run(e||{});
+    if(e){v.rows=[['Valor',fmt(e.valor)],['Categoria',e.categoria],['Data',fmtDateBR(e.data)]].concat(e.meio?[['Pagamento',e.meio]]:[]).concat(v.rows);
+      v.title=(v.edit.tipo==='despesa'?'Despesa: ':'Receita: ')+(e.nome||e.categoria);v.edit=null;}
+    v.state='ok';v.note='';AI_UNDO[id]=res.undo;delete AI_RT[id];
+    aiRenderCard(v);rt.resolve(res.info);
+  }catch(err){v.note=err.message||'Não deu certo.';aiRenderCard(v,true);}
+}
+function aiCardNo(id){
+  const rt=AI_RT[id];if(!rt)return;const v=rt.view;v.state='cancel';v.edit=null;delete AI_RT[id];
+  aiRenderCard(v);rt.resolve({ok:false,cancelado:true,mensagem:'A pessoa cancelou no cartão; nada foi feito.'});
+}
+function aiCardUndo(id){
+  const fn=AI_UNDO[id];if(!fn)return;delete AI_UNDO[id];
+  try{fn();}catch(e){}
+  const v=AI.view.find(x=>x.r==='card'&&x.id===id);if(v){v.state='undone';aiRenderCard(v);aiSave();}
+  toast('Desfeito','success');
+}
+function aiCardHTML(v){
+  const opt=(l,sel)=>l.map(x=>`<option${x===sel?' selected':''}>${escHTML(x)}</option>`).join('');
+  let body='';
+  if(v.state==='pending'&&v.edit){
+    const e=v.edit;
+    body=`<div class="ai-card-f">
+      <label class="w">Descrição<input id="aif-n-${v.id}" value="${escHTML(e.nome)}" maxlength="80"></label>
+      <label>Valor<input id="aif-v-${v.id}" data-money inputmode="numeric" value="${moneyAttr(e.valor)}"></label>
+      <label>Data<input id="aif-d-${v.id}" type="date" value="${e.data}"></label>
+      <label${e.tipo==='despesa'?'':' class="w"'}>Categoria<select id="aif-c-${v.id}">${opt(state.categories[e.tipo]||[],e.categoria)}</select></label>
+      ${e.tipo==='despesa'?`<label>Pagamento<select id="aif-m-${v.id}"><option value="">—</option>${opt(state.categories.meio||[],e.meio)}</select></label>`:''}
+    </div>`;
+  }
+  const rows=v.rows.length?`<div class="ai-card-rows">${v.rows.map(([k,x])=>`<div><span>${escHTML(k)}</span><b>${escHTML(x)}</b></div>`).join('')}</div>`:'';
+  const foot=v.state==='pending'?`<div class="ai-card-btns"><button class="no" onclick="aiCardNo('${v.id}')">Cancelar</button><button class="ok${v.danger?' danger':''}" onclick="aiCardOk('${v.id}')">${v.danger?'Excluir':'Confirmar'}</button></div>`
+    :v.state==='ok'?`<div class="ai-card-st ok">✓ Feito${AI_UNDO[v.id]?` <button onclick="aiCardUndo('${v.id}')">Desfazer</button>`:''}</div>`
+    :v.state==='undone'?`<div class="ai-card-st">Desfeito</div>`:`<div class="ai-card-st">Cancelado</div>`;
+  return`<div class="ai-card st-${v.state}" id="aic-${v.id}"><div class="ai-card-h"><span class="ai-card-ico">${escHTML(v.ico||'')}</span><b>${escHTML(v.title)}</b></div>
+    ${body}${rows}${v.note?`<div class="ai-card-err">${escHTML(v.note)}</div>`:''}${foot}</div>`;
+}
+function aiRenderCard(v,keepInputs){
+  const el=document.getElementById('aic-'+v.id);if(!el)return;
+  if(keepInputs){const n=el.querySelector('.ai-card-err');const h=`<div class="ai-card-err">${escHTML(v.note)}</div>`;
+    if(n)n.outerHTML=h;else el.querySelector('.ai-card-btns').insertAdjacentHTML('beforebegin',h);return;}
+  el.outerHTML=aiCardHTML(v);
 }
 
 // ============================================================
@@ -188,37 +359,53 @@ async function aiAsk(q){
   if(!navigator.onLine){toast('Sem internet: o Numi precisa de conexão para conversar.','error');return;}
   if(AI.msgs.length>=AI_MAX_MSGS){AI.msgs=[];AI.view.push({r:'sep'});}
   AI.busy=true;
-  const snap=AI.msgs.length;
+  const snap=AI.msgs.length,vsnap=AI.view.length;
   AI.msgs.push({role:'user',content:[{type:'text',text:q}]});
   AI.view.push({r:'u',text:q});
-  const cur={r:'a',text:'',status:'Pensando'};AI.view.push(cur);
+  let cur={r:'a',text:'',status:'Pensando'};AI.view.push(cur);
   aiRender();
   try{
     let ok=false;
-    for(let step=0;step<8;step++){
+    for(let step=0;step<10;step++){
       const r=await aiCall(d=>{cur.text+=d;cur.status='';aiRenderLast(cur);});
       const uses=(r.content||[]).filter(b=>b.type==='tool_use');
       if(r.stop_reason==='tool_use'&&uses.length){
         AI.msgs.push({role:'assistant',content:r.content});
-        cur.status=AI_TOOL_LABEL[uses[0].name]||'Consultando seus dados';
-        if(cur.text&&!/\n$/.test(cur.text))cur.text+='\n\n';
-        aiRenderLast(cur);
-        AI.msgs.push({role:'user',content:uses.map(u=>({type:'tool_result',tool_use_id:u.id,
-          content:JSON.stringify(aiRunTool(u.name,u.input))}))});
+        const res={};
+        uses.filter(u=>AI_READ[u.name]).forEach(u=>{res[u.id]=aiRunTool(u.name,u.input);});
+        const writes=uses.filter(u=>!AI_READ[u.name]);
+        if(writes.length){
+          // ações: mostra os cartões e espera a pessoa decidir cada um
+          cur.status='';if(!cur.text.trim())AI.view.splice(AI.view.indexOf(cur),1);
+          const waits=[];
+          writes.forEach(u=>{const c=aiMakeCard(u);
+            if(c.error){res[u.id]={ok:false,erro:c.error};return;}
+            AI.view.push(c.view);waits.push(c.promise.then(x=>{res[u.id]=x;}));});
+          aiRender();
+          await Promise.all(waits);
+          cur={r:'a',text:'',status:'Pensando'};AI.view.push(cur);aiRender();
+        }else{
+          cur.status=AI_TOOL_LABEL[uses[0].name]||'Consultando seus dados';
+          if(cur.text&&!/\n$/.test(cur.text))cur.text+='\n\n';
+          aiRenderLast(cur);
+        }
+        AI.msgs.push({role:'user',content:uses.map(u=>({type:'tool_result',tool_use_id:u.id,content:JSON.stringify(res[u.id]??{ok:false,erro:'sem resultado'})}))});
         continue;
       }
       if(uses.length)throw new Error('A resposta veio cortada. Tenta de novo?'); // tool_use truncado (max_tokens)
       AI.msgs.push({role:'assistant',content:r.content});
       if(r.stop_reason==='refusal')cur.text+=(cur.text?'\n\n':'')+'Essa eu prefiro não responder. Posso ajudar com alguma coisa das suas finanças?';
       else if(r.stop_reason==='max_tokens')cur.text+=' …';
-      if(!cur.text.trim())cur.text='Hmm, fiquei sem palavras. Pode perguntar de outro jeito?';
+      if(!cur.text.trim()){if(AI.view[AI.view.length-2]?.r==='card')AI.view.pop();else cur.text='Hmm, fiquei sem palavras. Pode perguntar de outro jeito?';}
       ok=true;break;
     }
     if(!ok)throw new Error('Essa deu muito trabalho e eu me perdi. Pode perguntar de um jeito mais simples?');
     cur.status='';
   }catch(e){
     AI.msgs.length=snap;            // desfaz a pergunta no histórico da IA (fica só na tela)
-    AI.view.pop();AI.view.push({r:'e',text:e.message||'Não consegui responder agora.',q});
+    Object.keys(AI_RT).forEach(id=>{delete AI_RT[id];});
+    const keep=AI.view.slice(vsnap+1).filter(v=>v.r==='card'&&v.state==='ok');  // ações já feitas continuam visíveis
+    AI.view.length=vsnap+1;AI.view.push(...keep,{r:'e',text:e.message||'Não consegui responder agora.',q});
   }
   AI.busy=false;aiSave();aiRender();
 }
@@ -242,6 +429,7 @@ function aiMd(s){
 }
 function aiBubble(v,i){
   if(v.r==='sep')return`<div class="ai-sep">nova conversa · o Numi não lembra do que está acima</div>`;
+  if(v.r==='card')return aiCardHTML(v);
   if(v.r==='u')return`<div class="ai-msg u"><div class="ai-b">${escHTML(v.text)}</div></div>`;
   if(v.r==='e')return`<div class="ai-msg a err"><img class="ai-av" src="mascote/preocupado.webp" alt=""><div class="ai-b"><p>${escHTML(v.text)}</p>
     <button class="ai-retry" onclick="aiRetry(${i})">Tentar de novo</button></div></div>`;
@@ -253,7 +441,7 @@ function aiRender(){
   box.innerHTML=AI.view.length?AI.view.map(aiBubble).join(''):`<div class="ai-hello">
       <img src="mascote/aceno.webp" alt="">
       <div class="ai-hello-t">Oi${name?', '+escHTML(name):''}! Eu sou o Numi.</div>
-      <div class="ai-hello-s">Pode me perguntar sobre seus gastos, seu mês ou seus objetivos. Eu olho seus lançamentos e te respondo.</div>
+      <div class="ai-hello-s">Pergunte sobre seu mês, seus gastos ou seus objetivos. Também posso lançar, editar e criar coisas pra você: é só pedir, e você confirma antes.</div>
       <div class="ai-sugs">${AI_SUGGEST.map(s=>`<button onclick="aiAsk(this.textContent)">${escHTML(s)}</button>`).join('')}</div>
     </div>`;
   const send=document.getElementById('ai-send');if(send)send.disabled=AI.busy;
@@ -268,7 +456,7 @@ function aiRenderLast(v){
 }
 function aiOpen(){
   if(!USER)return;
-  aiLoad();
+  if(!AI.busy)aiLoad();
   let el=document.getElementById('ai-chat');
   if(!el){
     el=document.createElement('div');el.id='ai-chat';
@@ -366,6 +554,27 @@ body.ai-lock #ai-fab{display:none;}
 .ai-form button:disabled{opacity:.45;cursor:default;}
 .ai-foot{font-size:11px;color:#a0957f;text-align:center;padding:2px 12px 10px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:#fffefb;}
 @media (max-width:767px){.ai-panel{width:100%;box-shadow:none;}}
+.ai-card{margin-left:38px;background:#fffefb;border:1.5px solid #cfe3d6;border-radius:16px;padding:12px 13px;font-size:14px;color:#2a2218;box-shadow:0 2px 10px rgba(27,133,79,.07);}
+.ai-card.st-cancel,.ai-card.st-undone{opacity:.6;border-color:#e6dfd2;box-shadow:none;}
+.ai-card-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.ai-card-h b{font-weight:700;font-size:14.5px;overflow-wrap:anywhere;}
+.ai-card-ico{width:28px;height:28px;border-radius:9px;background:#eef6f0;color:#1b854f;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.ai-card-f{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.ai-card-f label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:#8a7f70;font-weight:600;min-width:0;}
+.ai-card-f label.w{grid-column:1/-1;}
+.ai-card-f input,.ai-card-f select{border:1px solid #ddd5c5;border-radius:10px;padding:8px 9px;font:inherit;font-size:14px;color:#2a2218;background:#fff;min-width:0;width:100%;}
+.ai-card-f input:focus,.ai-card-f select:focus{outline:none;border-color:#1b854f;}
+.ai-card-rows div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #ece4d8;font-size:13px;}
+.ai-card-rows span{color:#8a7f70;}.ai-card-rows b{text-align:right;overflow-wrap:anywhere;}
+.ai-card-err{color:#b54d3a;font-size:12.5px;margin-top:6px;}
+.ai-card-btns{display:flex;gap:8px;margin-top:10px;}
+.ai-card-btns button{flex:1;border-radius:11px;padding:9px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;border:1px solid #ddd5c5;background:#fff;color:#6b6152;}
+.ai-card-btns .ok{background:#1b854f;border-color:#1b854f;color:#fff;}
+.ai-card-btns .ok.danger{background:#b54d3a;border-color:#b54d3a;}
+.ai-card-st{margin-top:8px;font-size:13px;color:#8a7f70;font-weight:600;display:flex;align-items:center;gap:8px;}
+.ai-card-st.ok{color:#1b854f;}
+.ai-card-st button{border:none;background:none;color:#1b854f;text-decoration:underline;font:inherit;font-weight:600;cursor:pointer;padding:0;}
+
 @media (prefers-reduced-motion:reduce){.ai-panel,.ai-scrim{transition:none}.ai-hello img,.ai-dots i{animation:none}}
 `;
   document.head.appendChild(st);

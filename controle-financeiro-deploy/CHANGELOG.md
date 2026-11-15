@@ -1,5 +1,11 @@
 # Changelog — Numi
 
+## [1.10.0] — o Numi faz coisas por você
+- Peça no chat e o Numi lança receitas e despesas (inclusive parceladas), edita ou exclui lançamentos, cria objetivos, guarda ou retira dinheiro de um objetivo, cria recorrentes e define limites de categoria
+- Toda ação aparece como um cartão: dá para ajustar descrição, valor, data, categoria e pagamento antes de confirmar; nada acontece sem o clique em Confirmar
+- Vários pedidos numa frase viram vários cartões, cada um com sua decisão
+- Depois de confirmar, o cartão mostra "Desfazer"
+
 ## [1.9.1] — o castor é o Numi
 - O assistente agora é o próprio Numi, o castor: fala em primeira pessoa ("Oi! Eu sou o Numi") e o botão vira "Fale com o Numi"
 

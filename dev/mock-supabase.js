@@ -101,36 +101,59 @@
 })();
 
 // ---------- IA falsa (Edge Function numi-ai) ----------
-// 1ª chamada de uma pergunta: pede a ferramenta conforme o texto; 2ª: responde usando o resultado.
+// Pergunta nova → pede ferramenta(s) conforme o texto; resultado de ferramenta → responde com base nele.
+// Ações de teste: "lança ..." (1 despesa), "lança duas" (2 cartões), "parcela" (10x), "apaga" (último lançamento),
+// "corrige" (edita o último), "cria objetivo", "guarda" (no 1º objetivo), "limite", "recorrente".
 // ?aierr=1 simula erro; ?ailimit=1 simula limite diário.
 (function(){
   const qs=new URLSearchParams(location.search);
   const realFetch=window.fetch.bind(window);
   window.__aiCalls=[];
+  const today=()=>new Date().toISOString().slice(0,10);
+  const lastTx=()=>typeof TX_ALL!=='undefined'?TX_ALL.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]:null;
+  function plan(q){
+    const t=(id,name,input)=>({type:'tool_use',id:'tu_'+Date.now()+'_'+id,name,input});
+    if(/lan[cç]a duas/.test(q))return[t(1,'criar_lancamento',{tipo:'despesa',nome:'Almoço',valor:32.5,categoria:'Alimentação',data:today()}),
+      t(2,'criar_lancamento',{tipo:'despesa',nome:'Uber',valor:18,categoria:'Transporte',data:today(),meio:'Pix'})];
+    if(/parcel/.test(q))return[t(1,'criar_lancamento',{tipo:'despesa',nome:'Geladeira',valor:3000,categoria:'Casa',parcelas:10,valor_e:'total'})];
+    if(/lan[cç]a|gastei/.test(q))return[t(1,'criar_lancamento',{tipo:'despesa',nome:'Farmácia',valor:45,categoria:'Saúde',data:today(),meio:'Pix'})];
+    if(/apaga|exclui/.test(q))return[t(1,'excluir_lancamento',{id:lastTx()?.id})];
+    if(/corrige|edita/.test(q))return[t(1,'editar_lancamento',{id:lastTx()?.id,valor:99.9})];
+    if(/cria.*objetivo/.test(q))return[t(1,'criar_objetivo',{nome:'Show do Coldplay',valor:1200,data:'2027-03-10',icone:'🎸',ja_guardado:200})];
+    if(/guarda/.test(q))return[t(1,'movimentar_objetivo',{objetivo_id:state?.goals?.[0]?.id,operacao:'guardar',valor:150})];
+    if(/limite/.test(q))return[t(1,'definir_limite',{categoria:'Lazer',valor:400})];
+    if(/recorrente/.test(q))return[t(1,'criar_recorrente',{tipo:'despesa',nome:'Netflix',valor:55.9,categoria:'Lazer',dia:12})];
+    if(/invalid/.test(q))return[t(1,'excluir_lancamento',{id:'nao-existe'})];
+    const name=/objetiv/.test(q)?'objetivos':/onde|categoria/.test(q)?'gastos_por_categoria':/delivery|ifood/.test(q)?'buscar_lancamentos':'resumo_financeiro';
+    return[t(1,name,name==='buscar_lancamentos'?{tipo:'despesa',texto:'ifood',de:'2026-01'}:{})];
+  }
+  function answer(results){
+    const r=results[0];
+    if(results.every(x=>x.cancelado))return'Tudo bem, não fiz nada.';
+    if(results.some(x=>x.erro))return'Não consegui: '+results.find(x=>x.erro).erro+'.';
+    if(results.some(x=>x.ok))return results.length>1?`Pronto, fiz ${results.filter(x=>x.ok).length} de ${results.length}.`:'Pronto, feito! ✅';
+    if(r.mes_atual)return`Seu mês até agora: entraram **R$ ${r.mes_atual.receitas.toLocaleString('pt-BR',{minimumFractionDigits:2})}** e saíram **R$ ${r.mes_atual.despesas.toLocaleString('pt-BR',{minimumFractionDigits:2})}**.\n\nMaiores gastos:\n${r.mes_atual.maiores_categorias.slice(0,3).map(c=>'- '+c.categoria+': R$ '+c.valor).join('\n')}`;
+    if(r.categorias)return`Em ${r.de}, a maior categoria foi **${r.categorias[0]?.categoria||'—'}** (${r.categorias[0]?.pct||0}%).`;
+    if(r.objetivos)return`Você tem **${r.objetivos.length} objetivos**. Livre para alocar: R$ ${r.visao_geral.livre_para_alocar}.`;
+    return`Achei **${r.encontrados} lançamentos**, somando R$ ${r.soma}.`;
+  }
   window.fetch=async(url,opts)=>{
     if(!String(url).includes('/functions/v1/numi-ai'))return realFetch(url,opts);
     const body=JSON.parse(opts.body);window.__aiCalls.push(body);
-    if(qs.has('ailimit'))return new Response(JSON.stringify({error:'limit',message:'Você chegou ao limite de 40 perguntas por hoje. Amanhã tem mais!'}),{status:429});
+    if(qs.has('ailimit'))return new Response(JSON.stringify({error:'limit',message:'Por hoje deu: você chegou ao limite de 40 perguntas. Amanhã tem mais!'}),{status:429});
     const msgs=body.messages,last=msgs[msgs.length-1];
     const evs=[];
     if(qs.has('aierr'))evs.push({t:'error',message:'Não consegui responder agora. Tenta de novo daqui a pouco.'});
     else if(last.content.some(b=>b.type==='text')){
       const q=last.content.find(b=>b.type==='text').text.toLowerCase();
-      const name=/objetiv/.test(q)?'objetivos':/onde|categoria/.test(q)?'gastos_por_categoria':/delivery|ifood|gastei com/.test(q)?'buscar_lancamentos':'resumo_financeiro';
-      const input=name==='buscar_lancamentos'?{tipo:'despesa',texto:'ifood',de:'2026-01'}:{};
-      evs.push({t:'done',stop_reason:'tool_use',content:[{type:'thinking',thinking:'',signature:'sig'},{type:'tool_use',id:'tu_'+msgs.length,name,input}]});
+      evs.push({t:'done',stop_reason:'tool_use',content:[{type:'thinking',thinking:'',signature:'sig'},...plan(q)]});
     }else{
-      const res=JSON.parse(last.content[0].content);
-      let txt;
-      if(res.mes_atual)txt=`Seu mês até agora: entraram **R$ ${res.mes_atual.receitas.toLocaleString('pt-BR',{minimumFractionDigits:2})}** e saíram **R$ ${res.mes_atual.despesas.toLocaleString('pt-BR',{minimumFractionDigits:2})}**.\n\nMaiores gastos:\n${res.mes_atual.maiores_categorias.slice(0,3).map(c=>'- '+c.categoria+': R$ '+c.valor).join('\n')}\n\nBora manter o ritmo!`;
-      else if(res.categorias)txt=`Em ${res.de}, a maior categoria foi **${res.categorias[0]?.categoria||'—'}** (${res.categorias[0]?.pct||0}%).`;
-      else if(res.objetivos)txt=`Você tem **${res.objetivos.length} objetivos**. Livre para alocar: R$ ${res.visao_geral.livre_para_alocar}.`;
-      else txt=`Achei **${res.encontrados} lançamentos**, somando R$ ${res.soma}.`;
+      const txt=answer(last.content.map(b=>JSON.parse(b.content)));
       txt.match(/.{1,12}/gs).forEach(d=>evs.push({t:'text',d}));
       evs.push({t:'done',stop_reason:'end_turn',content:[{type:'text',text:txt}]});
     }
     const enc=new TextEncoder();
-    const stream=new ReadableStream({async start(c){for(const e of evs){await new Promise(r=>setTimeout(r,40));c.enqueue(enc.encode('data: '+JSON.stringify(e)+'\n\n'));}c.close();}});
+    const stream=new ReadableStream({async start(c){for(const e of evs){await new Promise(r=>setTimeout(r,30));c.enqueue(enc.encode('data: '+JSON.stringify(e)+'\n\n'));}c.close();}});
     return new Response(stream,{status:200,headers:{'Content-Type':'text/event-stream'}});
   };
 })();

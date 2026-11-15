@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -34 498 176" role="img" aria-label="numi">
+  <!-- Numi: logo (proposta 2.0) - letras pesadas com cantos suaves, mordida de castor no "n" e moeda no pingo do "i" -->
+  <defs>
+    <mask id="bite" maskUnits="userSpaceOnUse" x="-20" y="-40" width="170" height="200">
+      <rect x="-20" y="-40" width="170" height="200" fill="#fff"/>
+      <circle cx="83" cy="22" r="12" fill="#000"/><circle cx="99" cy="31" r="13" fill="#000"/><circle cx="111" cy="48" r="12" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="#1b854f" stroke="#1b854f" stroke-width="7" stroke-linejoin="round">
+    <path mask="url(#bite)" d="M0 130V30H32V38C40 32 52 28 66 28C92 28 110 44 110 72V130H76V76C76 64 70 58 60 58C48 58 34 66 34 76V130Z"/>
+    <path d="M242 28V128H210V120C202 126 190 130 176 130C150 130 132 114 132 86V28H166V82C166 94 172 100 182 100C194 100 208 92 208 82V28Z"/>
+    <path d="M264 130V30H296V38C302 32 312 28 322 28C334 28 344 33 350 42C357 33 368 28 382 28C406 28 422 44 422 70V130H388V76C388 64 383 58 374 58C364 58 360 64 360 76V130H326V76C326 64 321 58 312 58C304 58 298 64 298 76V130Z"/>
+    <rect x="444" y="30" width="34" height="100" rx="2"/>
+  </g>
+  <circle cx="461" cy="-3" r="21" fill="#1b854f"/>
+  <circle cx="461" cy="-3" r="12.5" fill="none" stroke="#f3efe4" stroke-width="3.2"/>
+</svg>

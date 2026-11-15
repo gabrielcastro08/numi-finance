@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -14 442.0 150" role="img" aria-label="numi">
+<!-- Numi: logo 3.0 (teste) - letras encaixadas, mordida de castor no "n", moeda no pingo do "i" -->
+<defs>
+ <mask id="bite" maskUnits="userSpaceOnUse" x="-40" y="-60" width="510.0" height="240"><rect x="-40" y="-60" width="510.0" height="240" fill="#fff"/>
+  <circle cx="72" cy="27" r="10"/><circle cx="87" cy="33" r="11"/><circle cx="100" cy="46" r="10"/></mask>
+ <mask id="coin" maskUnits="userSpaceOnUse" x="-40" y="-60" width="510.0" height="240"><rect x="-40" y="-60" width="510.0" height="240" fill="#fff"/><circle cx="414.0" cy="12" r="26"/></mask>
+</defs>
+<g fill="none" stroke="#1b854f" stroke-width="32" stroke-linejoin="round" stroke-linecap="butt">
+ <g mask="url(#bite)"><path d="M16 130V30"/><path d="M16 76C16 58 32 46 54 46C80 46 92 58 92 80V78C92 98 101 98 101 120V130"/></g>
+ <path d="M134 30V56C134 84 151 114 178 114C196 114 210 102 210 96"/><path d="M210 30C210 46 201 54 201 70C201 86 210 92 210 100V130"/>
+ <path d="M250 130V102C250 90 241 84 241 70C241 54 250 44 250 30"/><path d="M250 74C250 56 262 46 280 46C300 46 312 56 312 74V130"/><path d="M312 74C312 56 324 46 342 46C362 46 374 56 374 74V76C374 96 365 94 365 116V130"/>
+ <g mask="url(#coin)"><path d="M414 36V76C414 96 405 94 405 116V130"/></g>
+</g>
+<circle cx="414.0" cy="12" r="20" fill="#1b854f"/>
+<circle cx="414.0" cy="12" r="12" fill="none" stroke="#f3efe4" stroke-width="3"/>
+</svg>
