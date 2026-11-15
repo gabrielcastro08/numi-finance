@@ -99,7 +99,7 @@ explicação do processo e do que funcionou.
 
 ```
 controle-financeiro-deploy/   app publicado (index.html, js/, sw.js, manifest, ícones, mascote)
-supabase/                     schema + RLS + storage, e script de migração
+supabase/                     schema + RLS + storage, migrações e Edge Function do assistente (functions/numi-ai)
 docs/
   ai-workflow/                specs usadas para conduzir o agente de IA
   DEPLOY.md                   checklist de deploy e testes manuais
@@ -131,9 +131,9 @@ topo do script em `index.html`.
 - [x] Seletor de ano e visão geral multi-ano
 - [x] Parcelas, limites por categoria e recorrentes com dia
 - [x] Objetivos com planejamento mensal, prioridades e linha do tempo
-- [ ] Assistente de IA que consulta os dados, pesquisa na web e executa ações no app com confirmação
+- [x] Assistente de IA que consulta os dados (Edge Function `numi-ai` + ferramentas executadas no app)
+- [ ] Assistente: ações no app com confirmação e pesquisa na web
 - [ ] Categorização automática de transações com LLM (Supabase Edge Function, saída estruturada e validada)
-- [ ] Perguntas em linguagem natural sobre os próprios gastos
 - [ ] Resumo mensal escrito por IA (hoje os destaques são gerados por regras)
 
 ## Autor

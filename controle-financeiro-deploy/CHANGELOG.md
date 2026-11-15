@@ -1,5 +1,12 @@
 # Changelog — Numi
 
+## [1.8.0] — assistente
+- Assistente com IA (Claude Sonnet 5.5): botão do castor abre um chat que responde sobre seu mês, gastos, categorias e objetivos, consultando os seus lançamentos
+- Linguagem simples e amigável, respostas aparecendo enquanto são escritas, sugestões de perguntas e "nova conversa"
+- Freios de custo: limite diário de perguntas e de gasto por usuário, controlados no servidor; a chave da IA fica só no Supabase
+- Nesta fase o assistente só consulta e analisa; lançar/editar com confirmação e pesquisa na web vêm nas próximas
+- Botão de ver a senha no login, no cadastro e na troca de senha
+
 ## [1.7.0] — objetivos
 - Nova área de Objetivos (aba no mobile, item no menu do desktop): viagem, compra, curso, reserva…
 - Cada objetivo tem valor estimado, data, "caixinha" (guardar e retirar dinheiro) e orçamento detalhado por itens

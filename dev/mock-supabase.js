@@ -99,3 +99,38 @@
     storage:{from(){return{upload:async()=>({error:null}),getPublicUrl:()=>({data:{publicUrl:''}})};}}
   };}};
 })();
+
+// ---------- IA falsa (Edge Function numi-ai) ----------
+// 1ª chamada de uma pergunta: pede a ferramenta conforme o texto; 2ª: responde usando o resultado.
+// ?aierr=1 simula erro; ?ailimit=1 simula limite diário.
+(function(){
+  const qs=new URLSearchParams(location.search);
+  const realFetch=window.fetch.bind(window);
+  window.__aiCalls=[];
+  window.fetch=async(url,opts)=>{
+    if(!String(url).includes('/functions/v1/numi-ai'))return realFetch(url,opts);
+    const body=JSON.parse(opts.body);window.__aiCalls.push(body);
+    if(qs.has('ailimit'))return new Response(JSON.stringify({error:'limit',message:'Você chegou ao limite de 40 perguntas por hoje. Amanhã tem mais!'}),{status:429});
+    const msgs=body.messages,last=msgs[msgs.length-1];
+    const evs=[];
+    if(qs.has('aierr'))evs.push({t:'error',message:'Não consegui responder agora. Tenta de novo daqui a pouco.'});
+    else if(last.content.some(b=>b.type==='text')){
+      const q=last.content.find(b=>b.type==='text').text.toLowerCase();
+      const name=/objetiv/.test(q)?'objetivos':/onde|categoria/.test(q)?'gastos_por_categoria':/delivery|ifood|gastei com/.test(q)?'buscar_lancamentos':'resumo_financeiro';
+      const input=name==='buscar_lancamentos'?{tipo:'despesa',texto:'ifood',de:'2026-01'}:{};
+      evs.push({t:'done',stop_reason:'tool_use',content:[{type:'thinking',thinking:'',signature:'sig'},{type:'tool_use',id:'tu_'+msgs.length,name,input}]});
+    }else{
+      const res=JSON.parse(last.content[0].content);
+      let txt;
+      if(res.mes_atual)txt=`Seu mês até agora: entraram **R$ ${res.mes_atual.receitas.toLocaleString('pt-BR',{minimumFractionDigits:2})}** e saíram **R$ ${res.mes_atual.despesas.toLocaleString('pt-BR',{minimumFractionDigits:2})}**.\n\nMaiores gastos:\n${res.mes_atual.maiores_categorias.slice(0,3).map(c=>'- '+c.categoria+': R$ '+c.valor).join('\n')}\n\nBora manter o ritmo!`;
+      else if(res.categorias)txt=`Em ${res.de}, a maior categoria foi **${res.categorias[0]?.categoria||'—'}** (${res.categorias[0]?.pct||0}%).`;
+      else if(res.objetivos)txt=`Você tem **${res.objetivos.length} objetivos**. Livre para alocar: R$ ${res.visao_geral.livre_para_alocar}.`;
+      else txt=`Achei **${res.encontrados} lançamentos**, somando R$ ${res.soma}.`;
+      txt.match(/.{1,12}/gs).forEach(d=>evs.push({t:'text',d}));
+      evs.push({t:'done',stop_reason:'end_turn',content:[{type:'text',text:txt}]});
+    }
+    const enc=new TextEncoder();
+    const stream=new ReadableStream({async start(c){for(const e of evs){await new Promise(r=>setTimeout(r,40));c.enqueue(enc.encode('data: '+JSON.stringify(e)+'\n\n'));}c.close();}});
+    return new Response(stream,{status:200,headers:{'Content-Type':'text/event-stream'}});
+  };
+})();
