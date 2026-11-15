@@ -1489,7 +1489,7 @@ function mascotEmpty(pose,title,sub,size){
 }
 // fala do castor: pose conforme o tom do destaque
 function mascotSay(ins,dark){
-  const pose=!ins?'aceno':ins.tone==='pos'?'comemora':ins.tone==='neg'?'preocupado':'aceno';
+  const pose=!ins?'aceno':ins.tone==='pos'?'oculos':ins.tone==='neg'?'preocupado':'aceno';
   const text=ins?ins.text:'Comece lançando as receitas e despesas do mês — eu organizo o resto.';
   return`<div class="nx-say${dark?' dark':''}"><img src="${MASCOT(pose)}" alt=""><div class="nx-say-b">${text}</div></div>`;
 }
@@ -3736,8 +3736,8 @@ async function exportXLSX(){
 }
 </script>
 
-<script src="js/objetivos.js?v=17"></script>
-<script src="js/assistente.js?v=22"></script>
+<script src="js/objetivos.js?v=18"></script>
+<script src="js/assistente.js?v=23"></script>
 <script>
 // ====== 1.8: botão de ver senha em todo campo de senha (login, cadastro, nova senha, perfil) ======
 (function(){

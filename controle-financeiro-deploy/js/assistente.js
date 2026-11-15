@@ -319,7 +319,7 @@ function aiCardHTML(v){
   }
   const rows=v.rows.length?`<div class="ai-card-rows">${v.rows.map(([k,x])=>`<div><span>${escHTML(k)}</span><b>${escHTML(x)}</b></div>`).join('')}</div>`:'';
   const foot=v.state==='pending'?`<div class="ai-card-btns"><button class="no" onclick="aiCardNo('${v.id}')">Cancelar</button><button class="ok${v.danger?' danger':''}" onclick="aiCardOk('${v.id}')">${v.danger?'Excluir':'Confirmar'}</button></div>`
-    :v.state==='ok'?`<div class="ai-card-st ok">✓ Feito${AI_UNDO[v.id]?` <button onclick="aiCardUndo('${v.id}')">Desfazer</button>`:''}</div>`
+    :v.state==='ok'?`<div class="ai-card-st ok"><img src="mascote/joinha.webp" alt="" class="ai-card-ok-img">Feito${AI_UNDO[v.id]?` <button onclick="aiCardUndo('${v.id}')">Desfazer</button>`:''}</div>`
     :v.state==='undone'?`<div class="ai-card-st">Desfeito</div>`:`<div class="ai-card-st">Cancelado</div>`;
   return`<div class="ai-card st-${v.state}" id="aic-${v.id}"><div class="ai-card-h"><span class="ai-card-ico">${escHTML(v.ico||'')}</span><b>${escHTML(v.title)}</b></div>
     ${body}${rows}${v.note?`<div class="ai-card-err">${escHTML(v.note)}</div>`:''}${foot}</div>`;
@@ -450,7 +450,7 @@ function aiBubble(v,i){
   if(v.r==='u')return`<div class="ai-msg u"><div class="ai-b">${escHTML(v.text)}</div></div>`;
   if(v.r==='e')return`<div class="ai-msg a err"><img class="ai-av" src="mascote/preocupado.webp" alt=""><div class="ai-b"><p>${escHTML(v.text)}</p>
     <button class="ai-retry" onclick="aiRetry(${i})">Tentar de novo</button></div></div>`;
-  return`<div class="ai-msg a"><img class="ai-av" src="mascote/rosto.webp" alt=""><div class="ai-b">${aiMd(v.text)}${v.sources?.length&&!v.status?`<div class="ai-src"><span>Fontes</span>${v.sources.map(x=>{let h='';try{h=new URL(x.url).hostname.replace(/^www\./,'');}catch(e){}
+  return`<div class="ai-msg a"><img class="ai-av" src="mascote/${v.status?'pensando':'rosto'}.webp" alt=""><div class="ai-b">${aiMd(v.text)}${v.sources?.length&&!v.status?`<div class="ai-src"><span>Fontes</span>${v.sources.map(x=>{let h='';try{h=new URL(x.url).hostname.replace(/^www\./,'');}catch(e){}
     return`<a href="${escHTML(x.url)}" target="_blank" rel="noopener noreferrer" title="${escHTML(x.title)}">${escHTML(h||x.title)}</a>`;}).join('')}</div>`:''}${v.status?`<div class="ai-status"><span class="ai-dots"><i></i><i></i><i></i></span>${escHTML(v.status)}…</div>`:''}</div></div>`;
 }
 function aiRender(){
@@ -595,6 +595,7 @@ body.ai-lock #ai-fab{display:none;}
 .ai-card-btns .ok.danger{background:#b54d3a;border-color:#b54d3a;}
 .ai-card-st{margin-top:8px;font-size:13px;color:#8a7f70;font-weight:600;display:flex;align-items:center;gap:8px;}
 .ai-card-st.ok{color:#1b854f;}
+.ai-card-ok-img{width:26px;height:26px;object-fit:contain;}
 .ai-card-st button{border:none;background:none;color:#1b854f;text-decoration:underline;font:inherit;font-weight:600;cursor:pointer;padding:0;}
 
 @media (prefers-reduced-motion:reduce){.ai-panel,.ai-scrim{transition:none}.ai-hello img,.ai-dots i{animation:none}}

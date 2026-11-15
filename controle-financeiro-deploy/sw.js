@@ -1,9 +1,9 @@
 // Numi — service worker
 // IMPORTANTE: incrementar o nome do cache a cada versão publicada (numi-vN).
-const CACHE = 'numi-v13';
+const CACHE = 'numi-v14';
 const SHELL = ['/', '/index.html', '/manifest.json',
                '/icons/numi-icon-192.png', '/icons/numi-icon-512.png',
-               '/mascote/malabares.webp', '/mascote/aceno.webp', '/mascote/dormindo.webp', '/mascote/rosto.webp'];
+               '/mascote/malabares.webp', '/mascote/aceno.webp', '/mascote/dormindo.webp', '/mascote/rosto.webp', '/mascote/pensando.webp', '/mascote/oculos.webp'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();

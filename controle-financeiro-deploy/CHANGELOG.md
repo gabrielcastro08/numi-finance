@@ -1,5 +1,11 @@
 # Changelog — Numi
 
+## [1.11.1] — novas poses do castor
+- De óculos escuros quando o mês está no azul; joinha ao criar objetivo e nas ações confirmadas no chat
+- Cofrinho ao guardar dinheiro num objetivo e na tela de objetivos vazia
+- Troféu quando um objetivo fica completo ou é realizado; de mala e chapéu quando o objetivo realizado é uma viagem
+- Pensativo enquanto o Numi pensa ou pesquisa na internet
+
 ## [1.11.0] — o Numi pesquisa na internet
 - Planejamento com pesquisa: passagens, hospedagem, custo de passeios, exigências de entrada, preços de produtos
 - Enquanto pesquisa, o chat mostra "Pesquisando na internet" / "Lendo uma página"; a resposta traz as fontes usadas

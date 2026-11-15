@@ -167,6 +167,9 @@ function goalsHomeCardHTML(){
       <div class="ng-mini-sub">${fmt(i.saved)} de ${fmt(g.target)}${i.per?` · ${fmt(i.per)}/mês`:''}</div></div></div>`;}).join('')}</div>`;
 }
 
+// pose do castor para objetivo de viagem
+const isTravelGoal=g=>['✈️','🏖️','🏔️','🎒','🗺️','⛺','🧳','🏝️'].includes(g?.icon);
+
 // ---------- tela ----------
 function renderGoals(elId){
   const el=document.getElementById(elId);if(!el)return;
@@ -175,7 +178,7 @@ function renderGoals(elId){
   if(!HAS_GOALS){el.innerHTML=`<div class="nx-an">${head}<div class="nx-card">${mascotEmpty('busca','Objetivos chegam já já','Falta só atualizar o banco de dados para liberar esta área.',110)}</div></div>`;return;}
   const P=goalsPlan();const{base,info}=P;const act=activeGoals();const done=state.goals.filter(g=>g.status==='concluido').sort((a,b)=>(b.done_at||'').localeCompare(a.done_at||''));
   if(!state.goals.length){
-    el.innerHTML=`<div class="nx-an">${head}<div class="nx-card ng-empty">${mascotEmpty('vazio','Nenhum objetivo ainda','Uma viagem, um notebook novo, uma reserva de emergência… Cadastre e o Numi calcula quanto guardar por mês.',120)}
+    el.innerHTML=`<div class="nx-an">${head}<div class="nx-card ng-empty">${mascotEmpty('cofrinho','Nenhum objetivo ainda','Uma viagem, um notebook novo, uma reserva de emergência… Cadastre e o Numi calcula quanto guardar por mês.',120)}
       <div class="ng-presets">${GOAL_PRESETS.map((p,k)=>`<button class="nx-chip" onclick="openGoalEditor(null,${k})">${p.icon} ${p.name}</button>`).join('')}</div></div></div>`;return;}
   const capTxt=base.months?`média de ${base.months} ${base.months>1?'meses':'mês'}`:'sem meses fechados ainda';
   let say='';
@@ -313,7 +316,7 @@ function saveGoalEditor(){
   const g=addGoal({name,icon:_ge.icon,target,target_date:date,notes});
   const s=moneyVal('ge-saved');if(s>0)addGoalMove(g.id,s,todayISO(),'Valor inicial');
   closePanel();if(IS_MOBILE)mNav('objetivos');else if(!document.getElementById('page-objetivos')?.classList.contains('active'))showPage('objetivos');else rerender();
-  toastMascot('comemora',`Objetivo criado: ${name}`);
+  toastMascot('joinha',`Objetivo criado: ${name}`);
 }
 
 // ---------- guardar / retirar ----------
@@ -342,8 +345,9 @@ function saveGoalMove(id,sign){
   addGoalMove(id,sign*v,document.getElementById('gm-date').value||todayISO(),document.getElementById('gm-note').value.trim());
   const after=goalInfo(g,goalBase());
   openGoal(id);rerender();
-  if(sign>0&&before.rem>0&&after.rem<=0)toastMascot('comemora',`${g.name}: tudo guardado! Hora de realizar 🎉`);
-  else toast(sign>0?`${fmt(v)} guardados`:`${fmt(v)} retirados`,'success');
+  if(sign>0&&before.rem>0&&after.rem<=0)toastMascot('trofeu',`${g.name}: tudo guardado! Hora de realizar 🎉`);
+  else if(sign>0)toastMascot('cofrinho',`${fmt(v)} guardados em ${g.name}`);
+  else toast(`${fmt(v)} retirados`,'success');
 }
 
 // ---------- realizei! ----------
@@ -352,7 +356,7 @@ function openGoalDone(id){
   const cats=state.categories.despesa||[];const meios=state.categories.meio||[];
   const travel=['✈️','🏖️','🏔️','🎒','🗺️','⛺'].includes(g.icon);
   const guess=(travel&&cats.find(c=>/viage|lazer/i.test(c)))||cats[0]||'';
-  openPanel(`<div class="ng-done-head"><img src="mascote/comemora.webp" alt=""><div><div class="nx-title" style="margin:0">Realizou ${escHTML(g.name)}?</div><p class="nx-p">O objetivo vai para “Realizados”. Se quiser, já registro o gasto como despesa.</p></div></div>
+  openPanel(`<div class="ng-done-head"><img src="mascote/${isTravelGoal(g)?'viagem':'trofeu'}.webp" alt=""><div><div class="nx-title" style="margin:0">Realizou ${escHTML(g.name)}?</div><p class="nx-p">O objetivo vai para “Realizados”. Se quiser, já registro o gasto como despesa.</p></div></div>
     <label class="ng-check"><input type="checkbox" id="gd-tx" checked onchange="document.getElementById('gd-fields').style.display=this.checked?'block':'none'"> Registrar como despesa</label>
     <div id="gd-fields">
       <div class="nx-lbl" style="margin-top:12px">Quanto custou?</div><input class="nx-input nx-money-big" id="gd-value" data-money inputmode="numeric" value="${moneyAttr(g.target)}">
@@ -374,7 +378,7 @@ function saveGoalDone(id){
   }
   updateGoal(id,{status:'concluido',done_at:new Date().toISOString()});
   closePanel();rerender();
-  toastMascot('comemora',`${g.name} realizado! Parabéns 🎉`);
+  toastMascot(isTravelGoal(g)?'viagem':'trofeu',`${g.name} realizado! ${isTravelGoal(g)?'Boa viagem ✈️':'Parabéns 🎉'}`);
 }
 
 // ---------- estilos ----------
