@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Numi</title>
+<link rel="preload" as="image" href="mascote/malabares.webp">
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
@@ -442,7 +443,7 @@ body{font-variant-numeric:tabular-nums;}
 /* splash: logo "se escrevendo" */
 @keyframes numiWrite{0%{clip-path:inset(0 100% 0 0);opacity:.2;}15%{opacity:1;}100%{clip-path:inset(0 0 0 0);opacity:1;}}
 @keyframes numiGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,255,255,0));}50%{filter:drop-shadow(0 0 14px rgba(255,255,255,.35));}}
-#numi-splash img{animation:numiWrite 1.05s cubic-bezier(.65,0,.25,1) both,numiGlow 2.4s ease-in-out 1.05s infinite!important;}
+#numi-splash .sp-logo-old{animation:numiWrite 1.05s cubic-bezier(.65,0,.25,1) both,numiGlow 2.4s ease-in-out 1.05s infinite!important;}
 </style>
 <style id="nx-styles-14">
 /* ---------- valor estilo Nubank ---------- */
@@ -549,6 +550,26 @@ input[data-money]::placeholder{color:var(--text3);font-weight:600;}
 .nx-month.planned{border-style:dashed;background:rgba(255,254,251,.6);}
 .nx-month-badge.future{background:var(--amber-dim);color:#7a5010;}
 </style>
+<style id="nx-styles-16">
+/* ---------- mascote ---------- */
+.auth-logo{display:flex;flex-direction:column;align-items:center;}
+.auth-mascot{width:96px!important;height:auto!important;margin-bottom:6px!important;animation:mWave 2.4s ease-in-out infinite;transform-origin:50% 100%;}
+@keyframes mWave{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-4deg)}86%{transform:rotate(3deg)}93%{transform:rotate(-2deg)}}
+.nx-mascot-empty{text-align:center;padding:22px 12px 26px;}
+.nx-mascot-empty img{height:auto;display:block;margin:0 auto 10px;animation:mPop .45s cubic-bezier(.2,1.4,.4,1) both;}
+.nx-me-t{font:700 14px var(--font-main);color:var(--text);}
+.nx-me-s{font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5;}
+@keyframes mPop{from{opacity:0;transform:scale(.85) translateY(6px)}to{opacity:1;transform:none}}
+.nx-say{display:flex;align-items:flex-end;gap:10px;}
+.nx-say img{width:62px;height:auto;flex-shrink:0;animation:mPop .45s cubic-bezier(.2,1.4,.4,1) both;}
+.nx-say-b{position:relative;background:var(--surface);border:1px solid var(--line,var(--border));border-radius:16px 16px 16px 4px;padding:11px 14px;font-size:13px;line-height:1.5;color:var(--text2);box-shadow:var(--shadow-1,0 2px 8px rgba(0,0,0,.05));margin-bottom:8px;}
+.nx-say-b b{color:var(--text);}
+.nx-say.dark img{width:70px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.2));}
+.nx-say.dark .nx-say-b{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.92);box-shadow:none;backdrop-filter:blur(4px);}
+.nx-say.dark .nx-say-b b{color:#fff;}
+.toast.toast-m{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;}
+.toast.toast-m img{width:40px;height:auto;flex-shrink:0;}
+</style>
 </head>
 <body>
 
@@ -568,32 +589,33 @@ input[data-money]::placeholder{color:var(--text3);font-weight:600;}
   ">Atualizar</button>
 </div>
 
-<!-- ===== SPLASH SCREEN ===== -->
-<div id="numi-splash" style="
-  position:fixed;inset:0;z-index:99999;
-  background:linear-gradient(160deg,#115c32 0%,#1b854f 100%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:opacity .4s ease;
-">
-  <img src="assets/logo-light-trim.png" alt="Numi"
-       style="height:104px;width:auto;animation:splashPulse 1.2s ease-in-out infinite alternate;">
-  <div style="margin-top:28px;width:36px;height:3px;border-radius:2px;
-              background:rgba(255,255,255,.25);overflow:hidden;">
-    <div style="height:100%;background:#fff;border-radius:2px;
-                animation:splashBar 1.4s ease-in-out infinite;"></div>
+<!-- ===== SPLASH SCREEN: castor fazendo malabarismo ===== -->
+<div id="numi-splash">
+  <div class="sp-stage">
+    <img class="sp-beaver" src="mascote/malabares.webp" alt="" width="200" height="209" fetchpriority="high">
+    <div class="sp-coin" style="animation-delay:0s"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#e9a91f"/><circle cx="20" cy="20" r="15.5" fill="#f7c948" stroke="#e0a21a" stroke-width="1.5"/><text x="20" y="25.5" text-anchor="middle" font-family="Plus Jakarta Sans,Arial,sans-serif" font-weight="800" font-size="14" fill="#c98a0e">R$</text></svg></div>
+    <div class="sp-coin" style="animation-delay:-.6s"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#e9a91f"/><circle cx="20" cy="20" r="15.5" fill="#f7c948" stroke="#e0a21a" stroke-width="1.5"/><text x="20" y="25.5" text-anchor="middle" font-family="Plus Jakarta Sans,Arial,sans-serif" font-weight="800" font-size="14" fill="#c98a0e">R$</text></svg></div>
+    <div class="sp-coin" style="animation-delay:-1.2s"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#e9a91f"/><circle cx="20" cy="20" r="15.5" fill="#f7c948" stroke="#e0a21a" stroke-width="1.5"/><text x="20" y="25.5" text-anchor="middle" font-family="Plus Jakarta Sans,Arial,sans-serif" font-weight="800" font-size="14" fill="#c98a0e">R$</text></svg></div>
   </div>
+  <img class="sp-logo" src="assets/logo-light-trim.png" alt="Numi">
 </div>
 
 <style>
-@keyframes splashPulse {
-  from { opacity:.85; transform:scale(.97); }
-  to   { opacity:1;   transform:scale(1);   }
-}
-@keyframes splashBar {
-  0%   { width:0%;   margin-left:0; }
-  50%  { width:100%; margin-left:0; }
-  100% { width:0%;   margin-left:100%; }
-}
+#numi-splash{position:fixed;inset:0;z-index:99999;background:radial-gradient(120% 90% at 50% 30%,#1f9257 0%,#1b854f 35%,#115c32 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s ease;}
+.sp-stage{position:relative;width:200px;height:209px;margin-top:120px;}
+.sp-beaver{width:200px;height:209px;display:block;animation:spBob .6s ease-in-out infinite alternate;transform-origin:50% 100%;filter:drop-shadow(0 14px 18px rgba(0,0,0,.18));}
+/* 3 moedas na mesma trajetória (cascata), defasadas em 1/3 do ciclo */
+.sp-coin{position:absolute;left:0;top:0;width:38px;height:38px;offset-path:path('M 30 44 C 50 -170, 150 -170, 186 38 C 160 -105, 66 -105, 30 44');offset-rotate:0deg;offset-anchor:50% 50%;animation:spJuggle 1.8s linear infinite;}
+.sp-coin svg{width:100%;height:100%;display:block;animation:spSpin .9s linear infinite;filter:drop-shadow(0 3px 4px rgba(0,0,0,.2));}
+.sp-logo{height:44px;width:auto;margin-top:26px;opacity:.95;}
+@keyframes spJuggle{from{offset-distance:0%}to{offset-distance:100%}}
+@keyframes spSpin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+@keyframes spBob{from{transform:translateY(0) scaleY(1)}to{transform:translateY(3px) scaleY(.985)}}
+@keyframes spFade{from{opacity:0;transform:translateY(6px)}to{opacity:.95;transform:none}}
+@media (prefers-reduced-motion:reduce){.sp-coin,.sp-coin svg,.sp-beaver{animation:none}.sp-coin{display:none}}
+/* navegadores sem offset-path: moedas só "flutuam" acima das patas */
+@supports not (offset-path:path('M0 0')){.sp-coin{animation:spFloat 1.2s ease-in-out infinite alternate}.sp-coin:nth-of-type(1){left:14px;top:-10px}.sp-coin:nth-of-type(2){left:83px;top:-80px}.sp-coin:nth-of-type(3){left:168px;top:-14px}}
+@keyframes spFloat{from{transform:translateY(0)}to{transform:translateY(-26px)}}
 </style>
 
 <!-- ============================================================ -->
@@ -709,7 +731,7 @@ async function loadAll(){
   }catch(e){
     let cached=null;try{cached=JSON.parse(localStorage.getItem(_cacheKey())||'null');}catch(_){}
     if(!cached)throw e;
-    raw=cached;setTimeout(()=>toast('Sem conexão — mostrando os dados salvos no aparelho','error'),300);
+    raw=cached;setTimeout(()=>(window.toastMascot||toast)('dormindo','Sem conexão — mostrando os dados salvos no aparelho','error'),300);
   }
   // reaplica por cima o que ainda está na fila offline
   ['profiles','transactions','recurrents','categories'].forEach(k=>raw[k]=_replay(k,raw[k].map(x=>({...x}))));
@@ -935,7 +957,7 @@ function recSorted(list){
 <!-- ============================================================ -->
 <div class="auth-screen" id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo"><img src="assets/logo-dark-trim.png" alt="Numi"></div>
+    <div class="auth-logo"><img class="auth-mascot" src="mascote/aceno.webp" alt="" width="96" height="121"><img src="assets/logo-dark-trim.png" alt="Numi"></div>
     <div class="auth-box">
 
       <div class="auth-view" id="auth-login">
@@ -981,7 +1003,7 @@ function recSorted(list){
       </div>
 
       <div class="auth-view" id="auth-loaderr" style="display:none">
-        <div class="modal-title">Sem conexão 📡</div>
+        <img src="mascote/dormindo.webp" alt="" style="width:120px;height:auto;display:block;margin:0 auto 10px;"><div class="modal-title" style="text-align:center">Sem conexão</div>
         <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:1.25rem;">Não foi possível carregar seus dados. Verifique sua internet e tente de novo.</p>
         <button class="btn-block" onclick="enterApp()">Tentar novamente</button>
       </div>
@@ -995,7 +1017,7 @@ function recSorted(list){
 <!-- ============================================================ -->
 <div class="auth-screen" id="onboarding-screen">
   <div class="auth-card">
-    <div class="auth-logo"><img src="assets/logo-dark-trim.png" alt="Numi"></div>
+    <div class="auth-logo"><img class="auth-mascot" src="mascote/aceno.webp" alt="" width="96" height="121"><img src="assets/logo-dark-trim.png" alt="Numi"></div>
     <div class="onb-dots" id="onb-dots"></div>
     <div class="auth-box" id="onb-body"></div>
   </div>
@@ -1412,13 +1434,31 @@ function budgetCardHTML(){
     <button class="nx-link" onclick="${IS_MOBILE?'mShowCategorias()':"showPage('categorias')"}">${rows.length?'ajustar':'definir'}</button></div>
     ${rows.length?budgetBarsHTML(rows):`<p class="nx-p">Defina um limite mensal para as categorias que quer acompanhar (ex.: Alimentação, Lazer). O Numi avisa quando chegar perto.</p>`}</div>`;
 }
+
+// ---------- mascote (castor) ----------
+const MASCOT=p=>`mascote/${p}.webp`;
+function mascotEmpty(pose,title,sub,size){
+  return`<div class="nx-mascot-empty"><img src="${MASCOT(pose)}" alt="" style="width:${size||110}px" loading="lazy"><div class="nx-me-t">${title}</div>${sub?`<div class="nx-me-s">${sub}</div>`:''}</div>`;
+}
+// fala do castor: pose conforme o tom do destaque
+function mascotSay(ins,dark){
+  const pose=!ins?'aceno':ins.tone==='pos'?'comemora':ins.tone==='neg'?'preocupado':'aceno';
+  const text=ins?ins.text:'Comece lançando as receitas e despesas do mês — eu organizo o resto.';
+  return`<div class="nx-say${dark?' dark':''}"><img src="${MASCOT(pose)}" alt=""><div class="nx-say-b">${text}</div></div>`;
+}
+function toastMascot(pose,msg,type){
+  const c=document.getElementById('toasts');if(!c)return;
+  const el=document.createElement('div');el.className=`toast ${type||'success'} toast-m`;
+  el.innerHTML=`<img src="${MASCOT(pose)}" alt=""><span></span>`;el.querySelector('span').textContent=msg;
+  c.appendChild(el);setTimeout(()=>el.remove(),4200);
+}
 // aviso ao lançar despesa que cruza 80% ou 100% do limite
 function checkBudgetAlert(t){
   if(!t||t.kind!=='despesa'||!state.limits[t.tag])return;
   const lim=state.limits[t.tag];const spent=sumV(txByKey(keyOf(t.year,t.month),'despesa').filter(x=>x.tag===t.tag));
   const before=spent-t.value;
-  if(spent>=lim&&before<lim)toast(`⚠ ${t.tag}: passou do limite do mês (${fmt(spent)} de ${fmt(lim)})`,'error');
-  else if(spent>=lim*.8&&before<lim*.8)toast(`${t.tag}: ${Math.round(spent/lim*100)}% do limite do mês`,'error');
+  if(spent>=lim&&before<lim)toastMascot('preocupado',`${t.tag}: passou do limite do mês (${fmt(spent)} de ${fmt(lim)})`,'error');
+  else if(spent>=lim*.8&&before<lim*.8)toastMascot('preocupado',`${t.tag}: ${Math.round(spent/lim*100)}% do limite do mês`,'error');
 }
 
 // ---------- insights (regras simples; base para a IA depois) ----------
@@ -2044,7 +2084,7 @@ function renderReceitas(){
       <button class="icon-btn edit" title="Editar" onclick="editTx('receita','${r.id}')">${_editSVG}</button>
       <button class="icon-btn" title="Excluir" onclick="delTx('receita','${r.id}')">${_delSVG}</button>
     </div></td>
-  </tr>`).join(''):`<tr><td colspan="6"><div class="empty-state">Nenhuma receita encontrada</div></td></tr>`;
+  </tr>`).join(''):`<tr><td colspan="6">${mascotEmpty('busca','Nenhuma receita encontrada','Tente mudar o mês ou os filtros.',96)}</td></tr>`;
 }
 
 // ---- DESPESAS ----
@@ -2072,7 +2112,7 @@ function renderDespesas(){
       <button class="icon-btn edit" title="Editar" onclick="editTx('despesa','${d.id}')">${_editSVG}</button>
       <button class="icon-btn" title="Excluir" onclick="delTx('despesa','${d.id}')">${_delSVG}</button>
     </div></td>
-  </tr>`).join(''):`<tr><td colspan="7"><div class="empty-state">Nenhuma despesa encontrada</div></td></tr>`;
+  </tr>`).join(''):`<tr><td colspan="7">${mascotEmpty('busca','Nenhuma despesa encontrada','Tente mudar o mês ou os filtros.',96)}</td></tr>`;
 }
 
 function delTx(type,id){removeTx(id);}
@@ -2261,7 +2301,7 @@ function recCardHTML(){
 function recentCardHTML(){
   const l=[...TX_ALL].filter(t=>t.year===APP_YEAR).sort((a,b)=>(b.year*12+b.month)-(a.year*12+a.month)||(b.date||'').localeCompare(a.date||'')).slice(0,7);
   return`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Últimos lançamentos</div><button class="nx-link" onclick="showPage('despesas')">ver tudo</button></div>
-    ${l.length?l.map(t=>`<div class="nx-row" onclick="editTx('${t.kind}','${t.id}')">${tagIcon(t.tag)}<div class="nx-row-main"><div class="nx-row-name">${txLabel(t)}</div><div class="nx-row-sub">${t.date?fmtDateBR(t.date):MONTHS[t.month]} · ${escHTML(t.tag)}${t.meio?' · '+escHTML(t.meio):''}</div></div><div class="nx-row-val ${t.kind==='receita'?'pos':'neg'}">${t.kind==='receita'?'+':'−'} ${fmt(t.value)}</div></div>`).join(''):'<p class="nx-p">Nenhum lançamento ainda.</p>'}</div>`;
+    ${l.length?l.map(t=>`<div class="nx-row" onclick="editTx('${t.kind}','${t.id}')">${tagIcon(t.tag)}<div class="nx-row-main"><div class="nx-row-name">${txLabel(t)}</div><div class="nx-row-sub">${t.date?fmtDateBR(t.date):MONTHS[t.month]} · ${escHTML(t.tag)}${t.meio?' · '+escHTML(t.meio):''}</div></div><div class="nx-row-val ${t.kind==='receita'?'pos':'neg'}">${t.kind==='receita'?'+':'−'} ${fmt(t.value)}</div></div>`).join(''):mascotEmpty('vazio','Nenhum lançamento ainda','Use + Despesa ou + Receita para começar.',100)}</div>`;
 }
 function renderInicio(){
   const el=document.getElementById('inicio-body');if(!el)return;
@@ -2275,7 +2315,7 @@ function renderInicio(){
     <div>
       <div class="hx-date">${date}</div>
       <div class="hx-greet">${greeting()}, ${escHTML(firstName())}</div>
-      <div class="hx-insight">${ins[0]?ins[0].text:'Comece lançando as receitas e despesas do mês — o Numi organiza o resto.'}</div>
+      <div class="hx-insight">${mascotSay(ins[0],true)}</div>
       <div class="hx-actions">
         <button class="hx-btn solid" onclick="openAddModal('despesa')">+ Despesa</button>
         <button class="hx-btn" onclick="openAddModal('receita')">+ Receita</button>
@@ -2322,7 +2362,7 @@ function renderRecorrentes(){
       <button class="icon-btn edit" title="Editar" onclick="openRecorrenteModal('${r.id}')">${_editSVG}</button>
       <button class="icon-btn" title="Excluir" onclick="removeRec('${r.id}')">${_delSVG}</button>
     </div>
-  </div>`).join(''):'<div class="empty-state">Nenhuma recorrente cadastrada</div>';
+  </div>`).join(''):mascotEmpty('vazio','Nenhuma recorrente cadastrada','Cadastre contas fixas como aluguel e salário para lançar com um toque.',100);
 }
 
 // ---- CATEGORIAS + LIMITES (desktop) ----
@@ -2545,7 +2585,7 @@ function mRenderAllRec(){
   const row=x=>mRecRow(x.r,x.done,`mCloseSheet();mOpenSheet('${x.r.type}','${x.r.id}')`);
   const head=t=>`<div style="font-size:10px;color:#9a8e7e;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:10px 2px 6px;">${t}</div>`;
   document.getElementById('mrec-list').innerHTML=!items.length
-    ?`<div style="text-align:center;padding:1.5rem;color:#9a8e7e;font-size:12px;">Nenhuma recorrente encontrada.</div>`
+    ?mascotEmpty('busca','Nenhuma recorrente encontrada','',84)
     :(pend.length?head(`Pendentes este mês · ${pend.length}`)+pend.map(row).join(''):'')
      +(done.length?head(`Já lançadas · ${done.length}`)+done.map(row).join(''):'');
 }
@@ -2729,7 +2769,7 @@ function mRenderLancamentos(){
       <span style="font-size:11px;color:#9a8e7e;">${list.length} transações</span>
       <span style="font-size:12px;font-weight:700;color:${isRec?'#1b854f':'#b54d3a'};">${fmtK(tot)}</span>
     </div>
-    ${list.length===0?`<div style="text-align:center;padding:3rem;color:#9a8e7e;font-size:13px;">Nenhuma transação</div>`:
+    ${list.length===0?mascotEmpty('vazio','Nenhuma transação aqui','Toque no + para lançar.',100):
     list.map(item=>`
       <div onclick="mShowTxDetail('${item.id}','${mLancType}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fffefb;border:1px solid #ddd5c5;border-radius:13px;margin-bottom:6px;cursor:pointer;">
         ${mTagIcon(item.tag,36)}
@@ -3012,7 +3052,7 @@ function mShowRecorrentes(){
           </div>
           <button onclick="mRecForm('${r.id}')" style="background:#e0f2e9;border:none;border-radius:9px;padding:7px 9px;cursor:pointer;font-size:12px;">✏️</button>
           <button onclick="mDelRec('${r.id}')" style="background:#f5e8e5;border:none;border-radius:9px;padding:7px 9px;cursor:pointer;font-size:12px;">🗑️</button>
-        </div>`).join(''):'<div style="text-align:center;padding:1.5rem;color:#9a8e7e;font-size:12px;">Nenhum recorrente cadastrado</div>'}
+        </div>`).join(''):mascotEmpty('vazio','Nenhum recorrente cadastrado','',90)}
       <div style="display:flex;gap:10px;margin-top:12px;">
         <button onclick="mShowConfig()" style="${MBTN_G}">← Voltar</button>
         <button onclick="mRecForm()" style="${MBTN_P}">+ Novo</button>
@@ -3081,9 +3121,9 @@ function mDelCat(k,item){deleteCategory(k,item);mShowCategorias();}
 function mRenderAnalise(){renderAnalysis('m-screen-analise');}
 function mRenderGeral(){renderOverview('m-screen-geral');}
 function mHomeExtras(){
-  const ins=insightsList().filter(i=>!i.action).slice(0,2);
+  const ins=insightsList().filter(i=>!i.action).slice(0,3);
   const showBudget=APP_YEAR===CUR_YEAR&&HAS_V13&&Object.keys(state.limits).length;
-  return(ins.length?`<div style="margin:0 16px 12px;">${ins.map(i=>`<div class="nx-insight ${i.tone}"><span class="nx-insight-ico">${i.ico}</span><span class="nx-insight-txt">${i.text}</span></div>`).join('')}</div>`:'')
+  return`<div style="margin:0 16px 12px;">${mascotSay(ins[0])}</div>`+(ins.length>1?`<div style="margin:0 16px 12px;">${ins.slice(1).map(i=>`<div class="nx-insight ${i.tone}"><span class="nx-insight-ico">${i.ico}</span><span class="nx-insight-txt">${i.text}</span></div>`).join('')}</div>`:'')
     +(showBudget?`<div style="margin:0 16px 12px;">${budgetCardHTML()}</div>`:'');
 }
 function mYearChip(){return`<span class="m-year-chip" onclick="openYearMenu()">${APP_YEAR} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m6 9 6 6 6-6"/></svg></span>`;}
@@ -3654,7 +3694,7 @@ if ('serviceWorker' in navigator) {
   if (splash) setTimeout(() => {
     splash.style.opacity = '0';
     setTimeout(() => splash.remove(), 420);
-  }, Math.max(0, 1250 - performance.now()));
+  }, Math.max(0, 1900 - performance.now()));
  }
 })();
 </script>

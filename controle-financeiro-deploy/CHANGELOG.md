@@ -1,5 +1,13 @@
 # Changelog — Numi
 
+## [1.6.0] — mascote
+- Novo mascote: um castor
+- Abertura com o castor fazendo malabarismo com moedas de R$ (animação em código, leve e funcionando offline)
+- Castor acenando no login e no primeiro acesso
+- Na tela inicial, o castor comenta o mês: comemora no azul e fica preocupado no vermelho
+- Telas vazias com o castor (sem lançamentos, sem recorrentes, busca sem resultado)
+- Aviso de limite de categoria e aviso de sem conexão com o castor
+
 ## [1.5.0] — local/destinatário, tooltips e mês atual
 - Campo opcional de local da compra (ou destinatário, no Pix) nas despesas, com sugestões do histórico
 - Análise: novo card "Onde você mais gasta"; exportação inclui a coluna Local/Destinatário
