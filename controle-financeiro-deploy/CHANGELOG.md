@@ -1,5 +1,8 @@
 # Changelog — Numi
 
+## [1.6.1] — tipografia
+- Títulos e valores em Fraunces Bold (no lugar da Lora itálica); textos corridos seguem em Plus Jakarta Sans
+
 ## [1.6.0] — mascote
 - Novo mascote: um castor
 - Abertura com o castor fazendo malabarismo com moedas de R$ (animação em código, leve e funcionando offline)
