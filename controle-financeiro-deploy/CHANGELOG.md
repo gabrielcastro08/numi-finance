@@ -1,5 +1,8 @@
 # Changelog — Numi
 
+## [1.9.1] — o castor é o Numi
+- O assistente agora é o próprio Numi, o castor: fala em primeira pessoa ("Oi! Eu sou o Numi") e o botão vira "Fale com o Numi"
+
 ## [1.9.0] — meta flexível
 - A meta de economia deixou de ser obrigatória e anual. Três jeitos de usar: só controlar os gastos (sem meta), guardar um valor até uma data, ou guardar um valor todo mês
 - A escolha aparece no primeiro acesso (o padrão é "só controlar") e pode ser trocada a qualquer momento em Meta de economia

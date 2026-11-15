@@ -165,7 +165,7 @@ async function aiCall(onText){
     body:JSON.stringify({messages:AI.msgs,context:{nome:firstName(),
       hoje:new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}})});
   if(!res.ok){let m='';try{m=(await res.json()).message;}catch(e){}
-    throw new Error(m||(res.status===401?'Faça login de novo para usar o assistente.':'Não consegui falar com o assistente agora.'));}
+    throw new Error(m||(res.status===401?'Faça login de novo para falar com o Numi.':'Não consegui responder agora. Tenta de novo daqui a pouco.'));}
   const rd=res.body.getReader(),dec=new TextDecoder();let buf='',done=null;
   for(;;){
     const{value,done:end}=await rd.read();if(end)break;
@@ -185,7 +185,7 @@ async function aiCall(onText){
 
 async function aiAsk(q){
   q=(q||'').trim();if(!q||AI.busy)return;
-  if(!navigator.onLine){toast('Sem internet: o assistente precisa de conexão.','error');return;}
+  if(!navigator.onLine){toast('Sem internet: o Numi precisa de conexão para conversar.','error');return;}
   if(AI.msgs.length>=AI_MAX_MSGS){AI.msgs=[];AI.view.push({r:'sep'});}
   AI.busy=true;
   const snap=AI.msgs.length;
@@ -241,7 +241,7 @@ function aiMd(s){
   return out;
 }
 function aiBubble(v,i){
-  if(v.r==='sep')return`<div class="ai-sep">nova conversa · o assistente não lembra do que está acima</div>`;
+  if(v.r==='sep')return`<div class="ai-sep">nova conversa · o Numi não lembra do que está acima</div>`;
   if(v.r==='u')return`<div class="ai-msg u"><div class="ai-b">${escHTML(v.text)}</div></div>`;
   if(v.r==='e')return`<div class="ai-msg a err"><img class="ai-av" src="mascote/preocupado.webp" alt=""><div class="ai-b"><p>${escHTML(v.text)}</p>
     <button class="ai-retry" onclick="aiRetry(${i})">Tentar de novo</button></div></div>`;
@@ -252,8 +252,8 @@ function aiRender(){
   const name=firstName();
   box.innerHTML=AI.view.length?AI.view.map(aiBubble).join(''):`<div class="ai-hello">
       <img src="mascote/aceno.webp" alt="">
-      <div class="ai-hello-t">Oi${name?', '+escHTML(name):''}! Sou o assistente do Numi.</div>
-      <div class="ai-hello-s">Pergunte sobre seus gastos, seu mês ou seus objetivos. Eu olho seus lançamentos e te respondo.</div>
+      <div class="ai-hello-t">Oi${name?', '+escHTML(name):''}! Eu sou o Numi.</div>
+      <div class="ai-hello-s">Pode me perguntar sobre seus gastos, seu mês ou seus objetivos. Eu olho seus lançamentos e te respondo.</div>
       <div class="ai-sugs">${AI_SUGGEST.map(s=>`<button onclick="aiAsk(this.textContent)">${escHTML(s)}</button>`).join('')}</div>
     </div>`;
   const send=document.getElementById('ai-send');if(send)send.disabled=AI.busy;
@@ -273,10 +273,10 @@ function aiOpen(){
   if(!el){
     el=document.createElement('div');el.id='ai-chat';
     el.innerHTML=`<div class="ai-scrim" onclick="aiClose()"></div>
-      <section class="ai-panel" role="dialog" aria-label="Assistente do Numi">
+      <section class="ai-panel" role="dialog" aria-label="Conversa com o Numi">
         <header class="ai-head">
           <img src="mascote/rosto.webp" alt="">
-          <div class="ai-head-t"><b>Assistente</b><span>consulta seus dados para responder</span></div>
+          <div class="ai-head-t"><b>Numi</b><span>seu castor das finanças</span></div>
           <button id="ai-newbtn" class="ai-hbtn" onclick="aiNew()" title="Nova conversa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 5v14M5 12h14"/></svg></button>
           <button class="ai-hbtn" onclick="aiClose()" title="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         </header>
@@ -301,8 +301,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&AI.open)aiClose();}
 function aiMountButton(){
   if(document.getElementById('ai-fab'))return;
   const b=document.createElement('button');b.id='ai-fab';b.className=IS_MOBILE?'m':'d';
-  b.setAttribute('aria-label','Abrir o assistente');b.title='Assistente';
-  b.innerHTML=`<img src="mascote/rosto.webp" alt="">${IS_MOBILE?'':'<span>Assistente</span>'}`;
+  b.setAttribute('aria-label','Conversar com o Numi');b.title='Conversar com o Numi';
+  b.innerHTML=`<img src="mascote/rosto.webp" alt="">${IS_MOBILE?'':'<span>Fale com o Numi</span>'}`;
   b.onclick=aiOpen;document.body.appendChild(b);
 }
 // o botão aparece quando o app abre (depois do login)

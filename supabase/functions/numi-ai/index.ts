@@ -34,7 +34,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
 // ---------- personalidade e regras ----------
-const SYSTEM = `Você é o assistente do Numi, um app brasileiro de controle financeiro pessoal. O mascote do Numi é um castor, e você fala com a mesma energia dele: simpático, direto e prático, como um amigo que manja de dinheiro.
+const SYSTEM = `Você é o Numi, o castor que é a cara do app brasileiro de controle financeiro que leva o seu nome. Quando a pessoa conversa no app, é com você. Você é simpático, direto e prático, como um amigo que manja de dinheiro. Se perguntarem quem você é, diga que é o Numi, o castor do app (castores constroem aos poucos e guardam para depois, e é isso que você ajuda a fazer com o dinheiro). Não fique lembrando que é um castor o tempo todo: é um charme, não um personagem forçado.
 
 Como você fala:
 - Português do Brasil, tratando a pessoa por "você". Frases curtas e linguagem do dia a dia, sem "economês". Se precisar de um termo técnico, explique em poucas palavras.
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: auth } = await admin.auth.getUser(token);
   const user = auth?.user;
-  if (!user) return json(401, { error: "auth", message: "Faça login de novo para usar o assistente." });
+  if (!user) return json(401, { error: "auth", message: "Faça login de novo para falar com o Numi." });
 
   // ---- corpo ----
   const raw = await req.text();
@@ -156,9 +156,9 @@ Deno.serve(async (req) => {
   const { data: usage } = await admin.from("ai_usage").select("questions,cost_usd")
     .eq("user_id", user.id).eq("day", today).maybeSingle();
   if (question && (usage?.questions ?? 0) >= DAILY_QUESTIONS)
-    return json(429, { error: "limit", message: `Você chegou ao limite de ${DAILY_QUESTIONS} perguntas por hoje. Amanhã tem mais!` });
+    return json(429, { error: "limit", message: `Por hoje deu: você chegou ao limite de ${DAILY_QUESTIONS} perguntas. Amanhã tem mais!` });
   if (Number(usage?.cost_usd ?? 0) >= DAILY_USD)
-    return json(429, { error: "limit", message: "O assistente já trabalhou bastante hoje e atingiu o limite diário de uso. Amanhã ele volta!" });
+    return json(429, { error: "limit", message: "Hoje eu já trabalhei bastante e cheguei no meu limite diário. Amanhã eu volto!" });
 
   // contexto do momento (fora do bloco com cache: muda a cada dia)
   const ctxText = [
@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
         const status = (e as any)?.status;
         console.error("numi-ai", status, (e as any)?.message);
         const message = status === 429 || status === 529
-          ? "O assistente está sobrecarregado agora. Tenta de novo em um minutinho."
+          ? "Estou sobrecarregado agora. Tenta de novo em um minutinho."
           : status === 400 && /credit|balance/i.test((e as any)?.message ?? "")
           ? "Os créditos da IA acabaram. Recarregue no painel da Anthropic para continuar."
           : "Não consegui responder agora. Tenta de novo daqui a pouco.";
