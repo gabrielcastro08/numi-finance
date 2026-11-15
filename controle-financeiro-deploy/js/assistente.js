@@ -71,13 +71,24 @@ function aiToolResumo(){
     ultimos_meses:meses,
     media_meses_fechados:{meses_considerados:fech.length,receitas:avg('receitas'),despesas:avg('despesas'),saldo:avg('saldo')},
     economia_acumulada_total:_r2(acc),
-    ano_atual:{receitas:_r2(anoR),despesas:_r2(anoD),saldo:_r2(anoR-anoD),
-      meta_de_economia_do_ano:state.goal?_r2(state.goal):null},
+    ano_atual:{receitas:_r2(anoR),despesas:_r2(anoD),saldo:_r2(anoR-anoD)},
+    meta_de_economia:aiMeta(),
     limites_por_categoria:limites,
     recorrentes:recs,
     parcelas_futuras:{total:_r2(sumV(futuras)),por_mes:Object.entries(porMes).map(([k,v])=>({mes:k,valor:_r2(v)}))},
     categorias:{despesa:state.categories.despesa,receita:state.categories.receita},
   };
+}
+
+// meta de economia (1.9): nenhuma, valor até uma data, ou valor por mês
+function aiMeta(){
+  if(typeof goalCalc!=='function')return null;
+  const g=goalCalc();
+  if(g.mode==='nenhuma'||!(g.goal>0))return{tipo:'sem meta (só controle)',guardado_desde_o_inicio:_r2(g.saved),inicio:g.startLabel};
+  if(g.mode==='mensal')return{tipo:'guardar um valor por mês',valor_por_mes:_r2(g.goal),guardado_este_mes:_r2(g.saved),
+    falta_este_mes:_r2(g.rem),meses_fechados:g.am,meses_em_que_bateu:g.hit,media_guardada_por_mes:_r2(g.avg),inicio:g.startLabel};
+  return{tipo:'guardar um valor até uma data',valor:_r2(g.goal),data:g.endLabel,inicio:g.startLabel,guardado:_r2(g.saved),
+    falta:_r2(g.rem),guardar_por_mes:g.passed?null:_r2(g.per),projecao_na_data:_r2(g.proj),data_ja_passou:!!g.passed};
 }
 
 function aiToolBuscar(i){

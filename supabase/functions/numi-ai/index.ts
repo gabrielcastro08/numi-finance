@@ -60,7 +60,7 @@ const TOOLS = [
   {
     name: "resumo_financeiro",
     description:
-      "Panorama geral: mês atual (receitas, despesas, saldo, maiores categorias), últimos 12 meses mês a mês, média mensal, economia acumulada, meta de economia do ano, limites por categoria com o uso no mês, contas recorrentes e parcelas futuras. Use primeiro para perguntas gerais (\"como estou?\", \"como foi meu mês?\").",
+      "Panorama geral: mês atual (receitas, despesas, saldo, maiores categorias), últimos 12 meses mês a mês, média mensal, economia acumulada, meta de economia (pode ser nenhuma, um valor até uma data ou um valor por mês), limites por categoria com o uso no mês, contas recorrentes e parcelas futuras. Use primeiro para perguntas gerais (\"como estou?\", \"como foi meu mês?\").",
     input_schema: { type: "object", properties: {}, additionalProperties: false },
   },
   {

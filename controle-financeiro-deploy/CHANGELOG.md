@@ -1,5 +1,12 @@
 # Changelog — Numi
 
+## [1.9.0] — meta flexível
+- A meta de economia deixou de ser obrigatória e anual. Três jeitos de usar: só controlar os gastos (sem meta), guardar um valor até uma data, ou guardar um valor todo mês
+- A escolha aparece no primeiro acesso (o padrão é "só controlar") e pode ser trocada a qualquer momento em Meta de economia
+- Opção de começar a contar a partir do mês atual, para quem cria a meta no meio do caminho
+- Cartões, destaques, saúde financeira e o assistente se adaptam ao tipo de meta; sem meta, a saúde financeira usa a taxa de poupança
+- Metas anuais antigas continuam valendo (viram "guardar até 31/12")
+
 ## [1.8.0] — assistente
 - Assistente com IA (Claude Sonnet 5.5): botão do castor abre um chat que responde sobre seu mês, gastos, categorias e objetivos, consultando os seus lançamentos
 - Linguagem simples e amigável, respostas aparecendo enquanto são escritas, sugestões de perguntas e "nova conversa"

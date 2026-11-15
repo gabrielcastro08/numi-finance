@@ -686,21 +686,38 @@ function avatarHTML(size){
   if(p?.avatar_url)return`<img src="${p.avatar_url}" alt="avatar" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid #1b854f;flex-shrink:0;display:block;">`;
   return`<div style="width:${size}px;height:${size}px;border-radius:50%;background:#1b854f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${Math.round(size*.38)}px;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0;">${initials(p?.name)}</div>`;
 }
-// meta com contexto de data: usa start_date do perfil, não assume janeiro
+// ====== META DE ECONOMIA (1.9): três modos ======
+// 'nenhuma' = só controle; 'data' = guardar X até uma data; 'mensal' = guardar X todo mês.
+// Perfis antigos (sem goal_mode): meta > 0 vira 'data' até 31/12 do ano atual (= a meta anual de antes).
+function goalMode(){const p=state.profile||{};if(p.goal_mode)return p.goal_mode;return state.goal>0?'data':'nenhuma';}
+const mShortK=k=>MONTHS_S[k%12].toLowerCase()+'/'+Math.floor(k/12);
 function goalCalc(){
-  const sdIso=state.profile?.start_date||`${APP_YEAR}-01-01`;
-  const sd=new Date(sdIso+'T00:00:00');
-  const startMonth=sd.getFullYear()<APP_YEAR?0:Math.min(11,sd.getMonth());
-  const monthsTotal=12-startMonth;
-  const tots=MONTHS.map((_,i)=>getMTr(i));
-  const saved=tots.reduce((s,t)=>s+t.saldo,0);
-  const am=tots.filter((t,i)=>i>=startMonth&&(t.receita>0||t.despesa>0)).length;
-  const ml=Math.max(1,monthsTotal-am);
-  const goal=state.goal||0;
-  const rem=Math.max(0,goal-saved);
-  const pct=goal>0?Math.min(100,(saved/goal)*100):0;
-  const proj=saved+(saved/(am||1))*ml;
-  return{saved,am,ml,monthsTotal,goal,rem,pct,proj,startMonth,startLabel:fmtDateBR(sdIso)};
+  const mode=goalMode(),goal=mode==='nenhuma'?0:(state.goal||0);
+  const sdIso=state.profile?.start_date||`${CUR_YEAR}-01-01`;
+  const startK=keyOf(+sdIso.slice(0,4),+sdIso.slice(5,7)-1);
+  const nowK=keyOf(CUR_YEAR,CUR_MONTH);
+  const ms=k=>sumV(txByKey(k,'receita'))-sumV(txByKey(k,'despesa'));
+  const has=k=>TX_ALL.some(t=>t.year*12+t.month===k);
+  const base={mode,goal,startLabel:fmtDateBR(sdIso),startK,nowK};
+  if(mode==='mensal'){
+    const closed=[];for(let k=startK;k<nowK;k++)if(has(k))closed.push(k);
+    const cur=ms(nowK),hit=closed.filter(k=>ms(k)>=goal).length;
+    const avg=closed.length?closed.reduce((s,k)=>s+ms(k),0)/closed.length:cur;
+    return{...base,saved:cur,rem:Math.max(0,goal-cur),pct:goal>0?Math.max(0,Math.min(100,cur/goal*100)):0,per:goal,ml:1,
+      am:closed.length,monthsTotal:closed.length,hit,avg,proj:avg,
+      gp:goal>0?(closed.length?hit/closed.length:Math.max(0,Math.min(1,cur/goal))):0,ot:goal>0?Math.max(0,Math.min(1,avg/goal)):0,
+      title:'Meta do mês',short:'Meta do mês'};
+  }
+  const endIso=state.profile?.goal_date||`${CUR_YEAR}-12-31`;
+  const endK=keyOf(+endIso.slice(0,4),+endIso.slice(5,7)-1);
+  let saved=0,am=0;for(let k=startK;k<=Math.min(nowK,endK);k++)if(has(k)){saved+=ms(k);am++;}
+  const monthsTotal=Math.max(1,endK-startK+1),ml=Math.max(1,endK-nowK+1);
+  const rem=Math.max(0,goal-saved),avg=am?saved/am:0;
+  const proj=saved+avg*Math.max(0,endK-nowK);
+  return{...base,saved,am,ml,monthsTotal,rem,avg,proj,per:rem/ml,endK,endLabel:fmtDateBR(endIso),passed:nowK>endK,
+    pct:goal>0?Math.max(0,Math.min(100,saved/goal*100)):0,
+    gp:goal>0?Math.max(0,Math.min(1,saved/goal)):0,ot:goal>0?Math.max(0,Math.min(1,avg/(goal/monthsTotal))):0,
+    title:goal>0?`Meta até ${mShortK(endK)}`:'Economia',short:goal>0?`Meta · ${mShortK(endK)}`:'Economia'};
 }
 
 // ====== ANO EM VISUALIZAÇÃO + TODAS AS TRANSAÇÕES ======
@@ -1187,7 +1204,7 @@ function recSorted(list){
     <div class="modal-title">Configurações</div>
     <button class="settings-item" onclick="closeModal('modal-settings');showPage('recorrentes')"><span>🔁&nbsp; Recorrentes</span><span>›</span></button>
     <button class="settings-item" onclick="closeModal('modal-settings');showPage('categorias')"><span>🏷️&nbsp; Categorias</span><span>›</span></button>
-    <button class="settings-item" onclick="closeModal('modal-settings');openGoalModal()"><span>🎯&nbsp; Meta e data de início</span><span>›</span></button>
+    <button class="settings-item" onclick="closeModal('modal-settings');openGoalModal()"><span>🎯&nbsp; Meta de economia</span><span>›</span></button>
     <button class="settings-item" onclick="closeModal('modal-settings');openImport()"><span>📥&nbsp; Importar planilha (.xlsx)</span><span>›</span></button>
     <button class="settings-item" onclick="exportXLSX()"><span>📤&nbsp; Exportar planilha (.xlsx)</span><span>›</span></button>
     <div class="modal-actions"><button class="btn" onclick="closeModal('modal-settings')">Fechar</button></div>
@@ -1515,8 +1532,12 @@ function insightsList(){
       out.push({ico:'🔁',tone:'neutral',text:`${pend.length} recorrente${pend.length>1?'s':''} pendente${pend.length>1?'s':''} este mês${fixed.length?` (${fmt(sumV(fixed.map(x=>x.r)))} em valores fixos)`:''}.`,action:fixed.length?{label:'Lançar',fn:'launchPendingPanel()'}:null});}
   }
   const g=goalCalc();
-  if(g.goal>0&&APP_YEAR===CUR_YEAR)out.push(g.proj>=g.goal?{ico:'🏁',tone:'pos',text:`No ritmo atual você fecha o ano com <b>${fmt(g.proj)}</b> — acima da meta de ${fmt(g.goal)}.`}
-    :{ico:'🏁',tone:'warn',text:`Para bater a meta de ${fmt(g.goal)}, faltam ${fmt(g.rem)}: cerca de <b>${fmt(g.rem/g.ml)}/mês</b>.`});
+  if(g.goal>0&&APP_YEAR===CUR_YEAR){
+    if(g.mode==='mensal')out.push(g.rem<=0?{ico:'🏁',tone:'pos',text:`Meta do mês batida: você já guardou <b>${fmt(g.saved)}</b> em ${MONTHS[CUR_MONTH].toLowerCase()}.`}
+      :{ico:'🏁',tone:'neutral',text:`Faltam <b>${fmt(g.rem)}</b> para a meta de ${fmt(g.goal)} deste mês.`});
+    else if(!g.passed)out.push(g.proj>=g.goal?{ico:'🏁',tone:'pos',text:`No ritmo atual você chega a <b>${fmt(g.proj)}</b> em ${g.endLabel}, acima da meta de ${fmt(g.goal)}.`}
+      :{ico:'🏁',tone:'warn',text:`Para bater a meta de ${fmt(g.goal)} até ${g.endLabel}, faltam ${fmt(g.rem)}: cerca de <b>${fmt(g.per)}/mês</b>.`});
+  }
   return out;
 }
 function insightsHTML(max=4,skip=0){
@@ -2241,20 +2262,76 @@ function applyAC(id){
 function hideAutocomplete(){document.getElementById('autocomplete-list').style.display='none';_acItems=[];}
 
 // ---- GOAL MODAL (meta + data de início) ----
-function openGoalModal(){
-  document.getElementById('modal-goal-title').textContent=`Meta Anual ${APP_YEAR}`;
-  document.getElementById('goal-input-label').textContent=`Quanto quer guardar até 31/dez/${APP_YEAR}? (R$)`;
-  document.getElementById('goal-input').value=state.goal||'';
-  document.getElementById('goal-start').value=state.profile?.start_date||`${APP_YEAR}-01-01`;
-  document.getElementById('modal-goal').classList.add('open');
+function openGoalModal(){openMetaEditor();}
+
+// ---- META: escolha do modo + campos (usado no editor e no primeiro acesso) ----
+const META_MODES=[
+  {k:'nenhuma',t:'Só quero controlar meus gastos',d:'Sem meta. Você acompanha receitas, despesas e quanto sobrou.'},
+  {k:'data',t:'Guardar um valor até uma data',d:'Ex.: R$ 10.000 até dezembro de 2027. O app mostra quanto guardar por mês.'},
+  {k:'mensal',t:'Guardar um valor todo mês',d:'Ex.: R$ 800 por mês. Começa a valer já, sem depender do calendário.'},
+];
+function metaModeOptionsHTML(sel,fn){
+  return META_MODES.map(o=>`<button type="button" class="onb-option${sel===o.k?' sel':''}" onclick="${fn}('${o.k}')"><b>${o.t}</b><span>${o.d}</span></button>`).join('');
 }
-function saveGoal(){
-  const v=parseFloat(document.getElementById('goal-input').value);
-  const sd=document.getElementById('goal-start').value;
-  if(!v||v<=0){toast('Valor inválido','error');return;}
-  if(!sd){toast('Data de início inválida','error');return;}
-  saveProfileFields({goal:v,start_date:sd});
-  closeModal('modal-goal');rerender();toast('Meta atualizada!','success');
+function metaDefaultDate(){const d=new Date();return isoOf(d.getFullYear()+1,d.getMonth(),daysIn(d.getFullYear()+1,d.getMonth()));}
+function metaFieldsHTML(mode,goal,date,p){
+  if(mode==='nenhuma')return'';
+  return`<div class="form-row" style="margin-top:.4rem;"><label class="form-label">${mode==='mensal'?'Quanto guardar por mês':'Quanto quer guardar'}</label>
+      <input class="form-input" id="${p}-goal" data-money inputmode="numeric" placeholder="R$ 0,00" value="${goal>0?goal:''}" oninput="metaPreview('${p}')"></div>
+    ${mode==='data'?`<div class="form-row"><label class="form-label">Até quando</label>${dateFieldHTML(p+'-date',date||metaDefaultDate(),`metaPreview('${p}')`)}</div>`:''}
+    <div class="auth-ok" id="${p}-calc" style="display:block;"></div>`;
+}
+function metaRead(p,strict){
+  const gi=document.getElementById(p+'-goal');if(!gi)return null;
+  const goal=moneyVal(gi),date=document.getElementById(p+'-date')?.value||'';
+  if(!strict)return{goal:goal>0?goal:0,date};
+  const err=p==='onb'?'onb-err':'me-err';
+  if(!(goal>0)){_authErr(err,'Informe um valor.');return null;}
+  if(document.getElementById(p+'-date')){
+    if(!date){_authErr(err,'Escolha a data.');return null;}
+    if(date<todayISO()){_authErr(err,'Escolha uma data no futuro.');return null;}
+  }
+  return{goal,date};
+}
+function metaPreview(p){
+  const el=document.getElementById(p+'-calc');if(!el)return;
+  const r=metaRead(p);const date=document.getElementById(p+'-date')?.value;
+  if(!r||!(r.goal>0)){el.textContent=date?'Informe um valor para ver quanto guardar por mês.':'Informe um valor.';return;}
+  if(!date){el.textContent=`Todo mês o app compara o que sobrou com ${fmt(r.goal)}.`;return;}
+  const now=keyOf(CUR_YEAR,CUR_MONTH),end=keyOf(+date.slice(0,4),+date.slice(5,7)-1);
+  const n=Math.max(1,end-now+1);
+  el.textContent=`≈ ${fmt(r.goal/n)} por mês, de ${MONTHS[CUR_MONTH].toLowerCase()} até ${MONTHS[end%12].toLowerCase()} de ${Math.floor(end/12)} (${n} ${n>1?'meses':'mês'}).`;
+}
+// editor (desktop: painel; mobile: folha de baixo)
+let _meMode='nenhuma';
+function openMetaEditor(mode){
+  _meMode=mode||goalMode();
+  const g=_meMode===goalMode()?state.goal:0;
+  const date=_meMode==='data'&&goalMode()==='data'?(state.profile?.goal_date||`${CUR_YEAR}-12-31`):'';
+  const html=`<div class="nx-title" style="margin-bottom:4px">Meta de economia</div>
+    <p class="nx-p" style="margin-bottom:12px">Escolha como quer acompanhar. Dá para mudar quando quiser.</p>
+    ${metaModeOptionsHTML(_meMode,'openMetaEditor')}
+    ${metaFieldsHTML(_meMode,g,date,'me')}
+    ${_meMode!=='nenhuma'?`<label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text2);margin:6px 0 4px;cursor:pointer">
+      <input type="checkbox" id="me-fresh" ${goalMode()===_meMode?'':'checked'}> Contar a partir deste mês (ignorar o que sobrou antes)</label>`:''}
+    <div class="auth-error" id="me-err"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;"><button class="nx-btn ghost" style="flex:1" onclick="closePanel()">Cancelar</button>
+      <button class="nx-btn primary" style="flex:1" onclick="saveMetaEditor()">Salvar</button></div>`;
+  // trocar de modo com o editor aberto só redesenha o conteúdo (sem reabrir a folha)
+  const cur=document.getElementById('me-root');
+  if(mode&&cur)cur.innerHTML=html;else openPanel(`<div id="me-root">${html}</div>`);
+  refreshInputs(document.getElementById('me-root')||document);metaPreview('me');
+}
+function saveMetaEditor(){
+  let f={goal_mode:_meMode};
+  if(_meMode==='nenhuma')f={...f,goal:0,goal_date:null};
+  else{
+    const r=metaRead('me',true);if(!r)return;
+    f={...f,goal:r.goal,goal_date:_meMode==='data'?r.date:null};
+    if(document.getElementById('me-fresh')?.checked)f.start_date=isoOf(CUR_YEAR,CUR_MONTH,1);
+  }
+  saveProfileFields(f);closePanel();rerender();
+  toast(_meMode==='nenhuma'?'Pronto: só controle, sem meta.':'Meta salva!','success');
 }
 
 // ---- RECORRENTE MODAL (novo + editar) ----
@@ -2314,11 +2391,19 @@ function scoreCardHTML(){
 }
 function goalCardHTML(){
   const g=goalCalc();
-  if(!(g.goal>0))return`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Meta ${APP_YEAR}</div></div><p class="nx-p">Defina quanto quer guardar no ano para acompanhar o ritmo.</p><button class="nx-btn primary" style="margin-top:10px;width:100%" onclick="openGoalModal()">Definir meta</button></div>`;
-  return`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Meta ${APP_YEAR}</div><button class="nx-link" onclick="openGoalModal()">editar</button></div>
+  if(!(g.goal>0))return`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Economia</div></div>
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;"><span style="font:700 28px var(--font-display);color:var(--green)">${fmt(g.saved)}</span><span class="nx-sub">guardado desde ${g.startLabel}</span></div>
+    <p class="nx-p" style="margin-top:6px">Sem meta por enquanto, só controle. Quando quiser, crie uma: um valor até uma data ou um valor por mês.</p>
+    <button class="nx-btn ghost" style="margin-top:10px;width:100%" onclick="openMetaEditor()">Criar uma meta</button></div>`;
+  if(g.mode==='mensal')return`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">Meta do mês</div><button class="nx-link" onclick="openMetaEditor()">editar</button></div>
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;"><span style="font:700 28px var(--font-display);color:${g.saved>=0?'var(--green)':'var(--red)'}">${fmt(g.saved)}</span><span class="nx-sub">de ${fmt(g.goal)} em ${MONTHS[CUR_MONTH].toLowerCase()}</span></div>
+    <div class="hx-goal-bar"><div style="width:${g.pct}%"></div></div>
+    <div class="hx-goal-stats"><div>Falta este mês<b>${g.rem>0?fmt(g.rem):'batida 🎉'}</b></div><div>Meses batidos<b>${g.am?g.hit+' de '+g.am:'—'}</b></div><div>Média por mês<b class="${g.avg>=g.goal?'pos':'warn'}">${fmt(g.avg)}</b></div></div></div>`;
+  return`<div class="nx-card"><div class="nx-card-head"><div class="nx-card-title">${g.title}</div><button class="nx-link" onclick="openMetaEditor()">editar</button></div>
     <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;"><span style="font:700 28px var(--font-display);color:var(--green)">${fmt(g.saved)}</span><span class="nx-sub">de ${fmt(g.goal)} · desde ${g.startLabel}</span></div>
     <div class="hx-goal-bar"><div style="width:${g.pct}%"></div></div>
-    <div class="hx-goal-stats"><div>Falta guardar<b>${fmt(g.rem)}</b></div><div>Por mês<b>${g.rem>0?fmt(g.rem/g.ml):'meta batida 🎉'}</b></div><div>Projeção<b class="${g.proj>=g.goal?'pos':'warn'}">${fmt(g.proj)}</b></div></div></div>`;
+    ${g.passed?`<p class="nx-p" style="margin-top:8px">${g.saved>=g.goal?'Meta batida 🎉':'A data chegou.'} Que tal definir a próxima? <button class="nx-link" onclick="openMetaEditor()">nova meta</button></p>`
+    :`<div class="hx-goal-stats"><div>Falta guardar<b>${fmt(g.rem)}</b></div><div>Por mês<b>${g.rem>0?fmt(g.per):'meta batida 🎉'}</b></div><div>Projeção<b class="${g.proj>=g.goal?'pos':'warn'}">${fmt(g.proj)}</b></div></div>`}</div>`;
 }
 function recCardHTML(){
   const all=recSorted(state.recorrentes);
@@ -2500,8 +2585,10 @@ function mCalcScore(){
   const totalRec=allT.reduce((s,t)=>s+t.receita,0);
   const am=allT.filter(t=>t.receita>0).length||1;
   const sr=totalRec>0?totalSaved/totalRec:0;
-  const gp=g.goal>0?Math.min(1,totalSaved/g.goal):0;
-  const ot=g.goal>0?Math.min(1,(totalSaved/am)/(g.goal/g.monthsTotal)):0;
+  // sem meta: os dois critérios da meta olham a taxa de poupança (guardar 20% da renda = nota máxima)
+  const noGoal=Math.max(0,Math.min(1,sr/0.2));
+  const gp=g.goal>0?g.gp:noGoal;
+  const ot=g.goal>0?g.ot:noGoal;
   const div=state.receitas.some(r=>r.tag!=='Salário'&&r.tag!=='Investimento')?1:.5;
   const score=Math.max(0,Math.round(sr*35+gp*30+ot*25+div*10));
   return{score,sr,gp,ot,div,totalSaved,totalRec,am};
@@ -2535,12 +2622,13 @@ function mRenderHome(){
     </div>
 
     <div style="display:flex;gap:10px;margin:0 16px 12px;">
-      <div class="m-card" style="flex:1.8;cursor:pointer;" onclick="mShowMetaDetail()">
-        <div style="font-size:9px;color:#9a8e7e;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Meta ${APP_YEAR} <span style="font-size:8px;opacity:.6;">→</span></div>
-        <div style="font-size:18px;font-weight:700;color:#1b854f;font-family:var(--font-display);">${fmtK(totalSaved)}</div>
-        <div style="font-size:10px;color:#9a8e7e;margin-bottom:9px;">de ${fmtK(g.goal)} · desde ${g.startLabel}</div>
-        <div style="height:5px;background:#ece4d8;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#1b854f;border-radius:3px;"></div></div>
-        <div style="font-size:10px;color:#9a8e7e;margin-top:5px;">${pct.toFixed(0)}% concluído</div>
+      <div class="m-card" style="flex:1.8;cursor:pointer;" onclick="${g.goal>0?'mShowMetaDetail()':'openMetaEditor()'}">
+        <div style="font-size:9px;color:#9a8e7e;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:6px;">${g.short} <span style="font-size:8px;opacity:.6;">→</span></div>
+        <div style="font-size:18px;font-weight:700;color:${totalSaved>=0?'#1b854f':'#b54d3a'};font-family:var(--font-display);">${fmtK(totalSaved)}</div>
+        <div style="font-size:10px;color:#9a8e7e;margin-bottom:9px;">${g.goal>0?(g.mode==='mensal'?`de ${fmtK(g.goal)} este mês`:`de ${fmtK(g.goal)} · desde ${g.startLabel}`):`guardado desde ${g.startLabel}`}</div>
+        ${g.goal>0?`<div style="height:5px;background:#ece4d8;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#1b854f;border-radius:3px;"></div></div>
+        <div style="font-size:10px;color:#9a8e7e;margin-top:5px;">${g.mode==='mensal'&&g.rem<=0?'meta do mês batida 🎉':pct.toFixed(0)+'% concluído'}</div>`
+        :`<div style="font-size:11px;color:#1b854f;font-weight:700;">+ criar uma meta</div>`}
       </div>
 
       <div class="m-card" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;" onclick="mShowScoreDetail()">
@@ -2673,64 +2761,50 @@ function mShowHeroDetail(monthIdx){
 // ---- META DETAIL SHEET ----
 function mShowMetaDetail(){
   const g=goalCalc();
+  const rows=g.mode==='mensal'?[
+    {l:'Guardado este mês',v:fmt(g.saved),c:g.saved>=0?'#1b854f':'#b54d3a'},
+    {l:'Falta este mês',v:g.rem>0?fmt(g.rem):'batida 🎉',c:'#a07020'},
+    {l:'Meses batidos',v:g.am?g.hit+' de '+g.am:'—',c:'#2a2218'},
+    {l:'Média por mês',v:fmt(g.avg),c:g.avg>=g.goal?'#1b854f':'#a07020'},
+    {l:'Contando desde',v:g.startLabel,c:'#2a2218'},
+  ]:[
+    {l:'Contando desde',v:g.startLabel,c:'#2a2218'},
+    {l:'Data da meta',v:g.endLabel,c:'#2a2218'},
+    {l:'Guardado até agora',v:fmt(g.saved),c:'#1b854f'},
+    {l:'Falta guardar',v:fmt(g.rem),c:'#a07020'},
+    {l:'Guardar por mês',v:g.passed?'—':g.rem>0?fmt(g.per)+'/mês':'meta batida 🎉',c:'#2a2218'},
+    {l:'Projeção na data',v:fmt(g.proj),c:g.proj>=g.goal?'#1b854f':'#a07020'},
+  ];
   mSheet(`
     <div style="padding:0 0 8px;">
-      <div style="${MTITLE}margin-bottom:4px;">Meta Anual ${APP_YEAR}</div>
-      <div style="font-size:28px;font-weight:700;color:#1b854f;font-family:var(--font-display);margin-bottom:4px;">${fmt(g.goal)}</div>
+      <div style="${MTITLE}margin-bottom:4px;">${g.mode==='mensal'?'Meta mensal':g.title}</div>
+      <div style="font-size:28px;font-weight:700;color:#1b854f;font-family:var(--font-display);margin-bottom:4px;">${fmt(g.goal)}${g.mode==='mensal'?'<span style="font-size:14px;color:#9a8e7e"> por mês</span>':''}</div>
       <div style="height:6px;background:#ece4d8;border-radius:3px;overflow:hidden;margin-bottom:16px;">
         <div style="height:100%;width:${g.pct}%;background:#1b854f;border-radius:3px;"></div>
       </div>
-      ${[
-        {l:'Início do controle',v:g.startLabel,c:'#2a2218'},
-        {l:'Economizado até agora',v:fmt(g.saved),c:'#1b854f'},
-        {l:'Falta guardar',v:fmt(g.rem),c:'#a07020'},
-        {l:'Meta mensal ajustada',v:fmt(g.rem/g.ml)+'/mês',c:'#2a2218'},
-        {l:'Projeção de fechamento',v:fmt(g.proj),c:g.proj>=g.goal?'#1b854f':'#a07020'},
-        {l:'Meses registrados',v:g.am+' de '+g.monthsTotal,c:'#2a2218'},
-      ].map(row=>`
+      ${rows.map(row=>`
         <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f4ede2;">
           <div style="font-size:13px;color:#6a5e4e;">${row.l}</div>
           <div style="font-size:14px;font-weight:700;color:${row.c};">${row.v}</div>
         </div>`).join('')}
       <div style="display:flex;gap:10px;margin-top:16px;">
         <button onclick="mCloseSheet()" style="${MBTN_G}">Fechar</button>
-        <button onclick="mCloseSheet();mEditMeta()" style="${MBTN_P}">Editar meta</button>
+        <button onclick="mCloseSheet();setTimeout(openMetaEditor,260)" style="${MBTN_P}">Editar meta</button>
       </div>
     </div>`);
 }
 
-function mEditMeta(){
-  mSheet(`
-    <div style="padding:0 0 8px;">
-      <div style="${MTITLE}margin-bottom:16px;">Meta e data de início</div>
-      <div style="margin-bottom:14px;">${mSheetLabel('Meta anual (R$)')}<input id="mm-val" type="number" class="m-input" value="${state.goal||''}" placeholder="10000"></div>
-      <div style="margin-bottom:14px;">${mSheetLabel('Data de início do controle')}<input id="mm-start" type="date" class="m-input" value="${state.profile?.start_date||''}"></div>
-      <p style="font-size:12px;color:#9a8e7e;line-height:1.6;margin-bottom:16px;">A meta mensal é calculada proporcionalmente aos meses restantes desde a data de início.</p>
-      <div style="display:flex;gap:10px;">
-        <button onclick="mCloseSheet()" style="${MBTN_G}">Cancelar</button>
-        <button onclick="mSaveMeta()" style="${MBTN_P}">Salvar</button>
-      </div>
-    </div>`);
-}
-
-function mSaveMeta(){
-  const v=parseFloat(document.getElementById('mm-val').value);
-  const sd=document.getElementById('mm-start').value;
-  if(!v||v<=0){toast('Valor inválido','error');return;}
-  if(!sd){toast('Data inválida','error');return;}
-  saveProfileFields({goal:v,start_date:sd});
-  mCloseSheet();mRenderHome();toast('Meta atualizada!','success');
-}
+function mEditMeta(){openMetaEditor();}
 
 // ---- SCORE DETAIL SHEET ----
 function mShowScoreDetail(){
-  const {score,sr,gp,ot,div}=mCalcScore();
+  const {score,sr,gp,ot,div}=mCalcScore();const _gm=goalMode();
   const sc=score>=70?'#1b854f':score>=45?'#a07020':'#b54d3a';
   const rv=40,circ=2*Math.PI*rv,offset=circ-(score/100)*circ;
   const metrics=[
     {l:'Taxa de poupança',desc:'% da renda que você poupa',v:Math.round(sr*100)+'%',p:sr,w:35},
-    {l:'Progresso da meta',desc:'Quanto da meta anual já atingiu',v:Math.round(gp*100)+'%',p:gp,w:30},
-    {l:'Ritmo mensal',desc:'Se o ritmo atual atinge a meta',v:Math.round(ot*100)+'%',p:ot,w:25},
+    {l:'Progresso da meta',desc:_gm==='nenhuma'?'Sem meta: usa a taxa de poupança (guardar 20% = 100%)':_gm==='mensal'?'Meses em que bateu a meta':'Quanto da meta já atingiu',v:Math.round(gp*100)+'%',p:gp,w:30},
+    {l:'Ritmo mensal',desc:_gm==='nenhuma'?'Sem meta: usa a taxa de poupança':'Se o seu ritmo atinge a meta',v:Math.round(ot*100)+'%',p:ot,w:25},
     {l:'Diversidade de renda',desc:'Fontes além de salário',v:div===1?'boa':'baixa',p:div,w:10},
   ];
   mSheet(`
@@ -3052,7 +3126,7 @@ function mShowConfig(){
       <div style="${MTITLE}">Configurações</div>
       <button class="m-menu-item" onclick="mShowRecorrentes()"><span>🔁&nbsp; Recorrentes</span><span style="color:#cdc4b2;">›</span></button>
       <button class="m-menu-item" onclick="mShowCategorias()"><span>🏷️&nbsp; Categorias e limites</span><span style="color:#cdc4b2;">›</span></button>
-      <button class="m-menu-item" onclick="mEditMeta()"><span>🎯&nbsp; Meta e data de início</span><span style="color:#cdc4b2;">›</span></button>
+      <button class="m-menu-item" onclick="mEditMeta()"><span>🎯&nbsp; Meta de economia</span><span style="color:#cdc4b2;">›</span></button>
       <button class="m-menu-item" onclick="openImport()"><span>📥&nbsp; Importar planilha (.xlsx)</span><span style="color:#cdc4b2;">›</span></button>
       <button class="m-menu-item" onclick="exportXLSX()"><span>📤&nbsp; Exportar planilha (.xlsx)</span><span style="color:#cdc4b2;">›</span></button>
       <button onclick="mShowProfileMenu()" style="width:100%;margin-top:10px;${MBTN_G}">← Voltar</button>
@@ -3302,9 +3376,9 @@ async function onVisible(){
 }
 
 // ---- ONBOARDING WIZARD ----
-let onb={step:1,name:'',birth:'',photoFile:null,photoURL:'',startChoice:'hoje',startDate:todayISO(),goal:0,importChoice:'later'};
+let onb={step:1,name:'',birth:'',photoFile:null,photoURL:'',startChoice:'hoje',startDate:todayISO(),goal:0,goalMode:'nenhuma',goalDate:'',importChoice:'later'};
 function showOnboarding(){
-  onb={step:1,name:'',birth:'',photoFile:null,photoURL:'',startChoice:'hoje',startDate:todayISO(),goal:0,importChoice:'later'};
+  onb={step:1,name:'',birth:'',photoFile:null,photoURL:'',startChoice:'hoje',startDate:todayISO(),goal:0,goalMode:'nenhuma',goalDate:'',importChoice:'later'};
   document.getElementById('onboarding-screen').classList.add('open');
   onbRender();
 }
@@ -3348,15 +3422,15 @@ function onbRender(){
   if(onb.step===3){
     b.innerHTML=`
       <div class="modal-title">Meta de economia</div>
-      <p style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:1rem;">Quanto você quer guardar até 31/12/${APP_YEAR}?</p>
-      <div class="form-row"><label class="form-label">Meta (R$)</label><input class="form-input" id="onb-goal" type="number" step="100" placeholder="10000" value="${onb.goal||''}" oninput="onbGoalPreview()"></div>
-      <div class="auth-ok" id="onb-goal-calc" style="display:block;">Informe um valor para ver a meta mensal.</div>
+      <p style="font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:1rem;">Como você quer usar o Numi? Dá para mudar quando quiser.</p>
+      ${metaModeOptionsHTML(onb.goalMode,'onbGoalMode')}
+      ${metaFieldsHTML(onb.goalMode,onb.goal,onb.goalDate,'onb')}
       <div class="auth-error" id="onb-err"></div>
       <div style="display:flex;gap:8px;margin-top:.5rem;">
         <button class="btn-block ghost" style="flex:1;" onclick="onb.step=2;onbRender()">← Voltar</button>
         <button class="btn-block" style="flex:1;" id="onb-step3-btn" onclick="onbNext3(this)">${onb.startChoice==='hoje'?'Concluir ✓':'Continuar →'}</button>
       </div>`;
-    onbGoalPreview();
+    refreshInputs(b);metaPreview('onb');
   }
   if(onb.step===4){
     const opts=[
@@ -3401,19 +3475,13 @@ function onbNext2(){
   }
   onb.step=3;onbRender();
 }
-function onbGoalPreview(){
-  const v=parseFloat(document.getElementById('onb-goal').value)||0;
-  const el=document.getElementById('onb-goal-calc');
-  if(v<=0){el.textContent='Informe um valor para ver a meta mensal.';return;}
-  const sd=new Date(onb.startDate+'T00:00:00');
-  const startMonth=sd.getFullYear()<APP_YEAR?0:Math.min(11,sd.getMonth());
-  const monthsTotal=12-startMonth;
-  el.textContent=`≈ ${fmt(v/monthsTotal)} por mês, de ${MONTHS[startMonth]} a Dezembro (${monthsTotal} meses).`;
+function onbGoalMode(m){
+  const r=metaRead('onb');if(r){onb.goal=r.goal;onb.goalDate=r.date;}
+  onb.goalMode=m;onbRender();
 }
 function onbNext3(btn){
-  const v=parseFloat(document.getElementById('onb-goal').value);
-  if(!v||v<=0){_authErr('onb-err','Informe uma meta válida.');return;}
-  onb.goal=v;
+  if(onb.goalMode==='nenhuma'){onb.goal=0;onb.goalDate='';}
+  else{const r=metaRead('onb',true);if(!r)return;onb.goal=r.goal;onb.goalDate=r.date;}
   if(onb.startChoice==='hoje'){onbFinish(btn);return;}
   onb.step=4;onbRender();
 }
@@ -3425,7 +3493,7 @@ async function onbFinish(btnEl){
       try{avatar_url=await uploadAvatar(onb.photoFile);}
       catch(e){console.error('avatar:',e);toast('Não foi possível enviar a foto — você pode tentar de novo no Perfil.','error');}
     }
-    const{error}=await sb.from('profiles').upsert({id:USER.id,name:onb.name,birth_date:onb.birth||null,avatar_url,start_date:onb.startDate,goal:onb.goal||0});
+    const{error}=await sb.from('profiles').upsert({id:USER.id,name:onb.name,birth_date:onb.birth||null,avatar_url,start_date:onb.startDate,goal:onb.goal||0,goal_mode:onb.goalMode,goal_date:onb.goalMode==='data'?onb.goalDate:null});
     if(error)throw error;
     if(!_catRows.length){
       const rows=Object.entries(DEFAULT_CATS).flatMap(([type,names])=>names.map(name=>({id:uuid(),user_id:USER.id,type,name})));
@@ -3669,7 +3737,7 @@ async function exportXLSX(){
 </script>
 
 <script src="js/objetivos.js?v=17"></script>
-<script src="js/assistente.js?v=18"></script>
+<script src="js/assistente.js?v=19"></script>
 <script>
 // ====== 1.8: botão de ver senha em todo campo de senha (login, cadastro, nova senha, perfil) ======
 (function(){
